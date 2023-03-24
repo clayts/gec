@@ -20,11 +20,11 @@ func DeltaTime() float64 {
 	return thisFrame.Sub(lastFrame).Seconds()
 }
 
-func Initialize(title string, width, height int, resizable bool) {
+func Initialize(title string) {
 	runtime.LockOSThread()
 
 	//GLFW
-	initWindow(title, width, height, resizable)
+	initWindow(title)
 
 	//GL
 	if err := gl.Init(); err != nil {

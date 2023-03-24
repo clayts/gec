@@ -7,22 +7,17 @@ import (
 
 var Window *glfw.Window
 
-func initWindow(title string, width, height int, resizable bool) {
+func initWindow(title string) {
 
 	if err := glfw.Init(); err != nil {
 		panic(err)
-	}
-	if resizable {
-		glfw.WindowHint(glfw.Resizable, glfw.True)
-	} else {
-		glfw.WindowHint(glfw.Resizable, glfw.False)
 	}
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	w, err := glfw.CreateWindow(width, height, title, nil, nil)
+	w, err := glfw.CreateWindow(1, 1, title, glfw.GetPrimaryMonitor(), nil)
 	if err != nil {
 		panic(err)
 	}

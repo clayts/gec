@@ -34,7 +34,7 @@ func main() {
 
 	// ------------------------------------------------------
 
-	graphics.Initialize("test", 500, 500, true)
+	graphics.Initialize("test")
 	defer graphics.Delete()
 
 	sprites.Initialize()
