@@ -1,7 +1,6 @@
 package tree
 
 import (
-	"fmt"
 	"math"
 
 	geo "github.com/clayts/gec/geometry"
@@ -55,26 +54,6 @@ func (t *Tree) remove(l *Leaf) {
 	}
 }
 
-// DEBUG -----------------------------------------------------------
-func (t *Tree) Print() {
-	var print func(b *branch, prefix string)
-	print = func(b *branch, prefix string) {
-		if b != nil {
-			if b.upper {
-				prefix += "1"
-			} else {
-				prefix += "0"
-			}
-			fmt.Println(prefix, b.size, "(", len(b.leaves), ")")
-			for _, c := range b.children {
-				print(c, prefix)
-			}
-		}
-	}
-	print(t.local, "L")
-	print(t.universal, "U")
-}
-
 func (t *Tree) Size() int {
 	size := 0
 	if t.local != nil {
@@ -86,4 +65,23 @@ func (t *Tree) Size() int {
 	return size
 }
 
+// DEBUG -----------------------------------------------------------
+// func (t *Tree) Print() {
+// 	var print func(b *branch, prefix string)
+// 	print = func(b *branch, prefix string) {
+// 		if b != nil {
+// 			if b.upper {
+// 				prefix += "1"
+// 			} else {
+// 				prefix += "0"
+// 			}
+// 			fmt.Println(prefix, b.size, "(", len(b.leaves), ")")
+// 			for _, c := range b.children {
+// 				print(c, prefix)
+// 			}
+// 		}
+// 	}
+// 	print(t.local, "L")
+// 	print(t.universal, "U")
+// }
 // -----------------------------------------------------------------
