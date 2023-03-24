@@ -15,6 +15,8 @@ type Tree struct {
 	universal *branch
 }
 
+func New() *Tree { return &Tree{} }
+
 // Runs f(*Leaf) on every *Leaf in the Tree which intersects with s.
 func (t *Tree) AllLeavesIntersecting(s geo.Shape, f func(l *Leaf) bool) bool {
 	return t.universal.allLeaves(f) && t.local.allLeavesIntersecting(s, f)

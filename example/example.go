@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	space := tree.Tree{}
+	space := tree.New()
 
 	leaves := []*tree.Leaf{}
 	for i := 0; i < 100000; i++ {
@@ -21,7 +21,6 @@ func main() {
 		x := space.NewLeaf().SetShape(geometry.R(v, v.Plus(geometry.V(10, 10)))).Enable()
 		leaves = append(leaves, x)
 	}
-	space.Print()
 	fmt.Println("-------------")
 	space.AllLeavesIntersecting(geometry.R(geometry.V(0, 0), geometry.V(1000, 1000)), func(l *tree.Leaf) bool {
 		fmt.Println("found", l)
@@ -31,7 +30,6 @@ func main() {
 	for _, l := range leaves {
 		l.Disable()
 	}
-	space.Print()
 	fmt.Println(space)
 
 	// ------------------------------------------------------
