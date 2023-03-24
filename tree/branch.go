@@ -14,7 +14,19 @@ type branch struct {
 	size           int
 }
 
-func (b *branch) allContained(s geo.Shape, f func(l *Leaf) bool) bool {
+func (b *branch) allLeaves(f func(l *Leaf) bool) bool {
+	if b == nil {
+		return true
+	}
+	for _, l := range b.leaves {
+		if !f(l) {
+			return false
+		}
+	}
+	return b.children[0].allLeaves(f) && b.children[1].allLeaves(f)
+}
+
+func (b *branch) allLeavesIntersectingSkipBounds(s geo.Shape, f func(l *Leaf) bool) bool {
 	if b == nil {
 		return true
 	}
@@ -26,10 +38,10 @@ func (b *branch) allContained(s geo.Shape, f func(l *Leaf) bool) bool {
 			}
 		}
 	}
-	return b.children[0].allContained(s, f) && b.children[1].allContained(s, f)
+	return b.children[0].allLeavesIntersectingSkipBounds(s, f) && b.children[1].allLeavesIntersectingSkipBounds(s, f)
 }
 
-func (b *branch) all(s geo.Shape, f func(l *Leaf) bool) bool {
+func (b *branch) allLeavesIntersecting(s geo.Shape, f func(l *Leaf) bool) bool {
 	if b == nil {
 		return true
 	}
@@ -37,7 +49,7 @@ func (b *branch) all(s geo.Shape, f func(l *Leaf) bool) bool {
 		return true
 	}
 	if s.Bounds().Contains(b.bounds()) {
-		return b.allContained(s, f)
+		return b.allLeavesIntersectingSkipBounds(s, f)
 	}
 	for _, l := range b.leaves {
 		if geo.Intersects(s, l.shape) {
@@ -46,7 +58,7 @@ func (b *branch) all(s geo.Shape, f func(l *Leaf) bool) bool {
 			}
 		}
 	}
-	return b.children[0].all(s, f) && b.children[1].all(s, f)
+	return b.children[0].allLeavesIntersecting(s, f) && b.children[1].allLeavesIntersecting(s, f)
 }
 
 func (b *branch) remove(l *Leaf) {

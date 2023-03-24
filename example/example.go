@@ -23,7 +23,7 @@ func main() {
 	}
 	space.Print()
 	fmt.Println("-------------")
-	space.All(geometry.R(geometry.V(0, 0), geometry.V(1000, 1000)), func(l *tree.Leaf) bool {
+	space.AllLeavesIntersecting(geometry.R(geometry.V(0, 0), geometry.V(1000, 1000)), func(l *tree.Leaf) bool {
 		fmt.Println("found", l)
 		return true
 	})

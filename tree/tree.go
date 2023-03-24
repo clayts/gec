@@ -16,15 +16,14 @@ type Tree struct {
 	universal *branch
 }
 
-func (t *Tree) All(s geo.Shape, f func(l *Leaf) bool) bool {
-	if t.universal != nil {
-		for _, l := range t.universal.leaves {
-			if !f(l) {
-				return false
-			}
-		}
-	}
-	return t.local.all(s, f)
+// Runs f(*Leaf) on every *Leaf in the Tree which intersects with s.
+func (t *Tree) AllLeavesIntersecting(s geo.Shape, f func(l *Leaf) bool) bool {
+	return t.universal.allLeaves(f) && t.local.allLeavesIntersecting(s, f)
+}
+
+// Runs f(*Leaf) on every *Leaf in the Tree.
+func (t *Tree) AllLeaves(f func(l *Leaf) bool) bool {
+	return t.universal.allLeaves(f) && t.local.allLeaves(f)
 }
 
 func (t *Tree) add(l *Leaf) {
