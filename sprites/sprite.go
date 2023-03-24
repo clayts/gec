@@ -9,7 +9,6 @@ import (
 type Sprite struct {
 	renderer *Renderer
 	index    int
-	Glow     bool
 }
 
 func (r *Renderer) NewSprite(img image.Image) Sprite {
