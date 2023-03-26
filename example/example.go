@@ -36,7 +36,7 @@ func (u *universe) createThing(sprite sprites.Sprite, position geometry.Vector, 
 	depth := rand.Float32()
 
 	renderZone := u.RenderProcedureSpace.NewZone().
-		SetContents(func(s geometry.Shape) {
+		SetContents(func(callShape geometry.Shape) {
 			sprite.Draw(transform, depth)
 		}).
 		SetShape(transform.Rectangle(sprite.Bounds())).
@@ -46,7 +46,7 @@ func (u *universe) createThing(sprite sprites.Sprite, position geometry.Vector, 
 		SetContents(func() {
 			transform = geometry.Translation(linearVelocity.TimesScalar(u.StepDuration.Seconds())).Times(transform)
 			renderZone.SetShape(transform.Rectangle(sprite.Bounds()))
-			if !geometry.Contains(u.Camera.Shape(), renderZone.Shape()) {
+			if !geometry.Contains(u.Camera.Rectangle(graphics.Bounds()), renderZone.Shape()) {
 				linearVelocity = geometry.V(0, 0).Minus(linearVelocity)
 			}
 		}).
@@ -63,19 +63,16 @@ func main() {
 	u := newUniverse()
 	defer u.Delete()
 
-	width, height := graphics.Window.GetSize()
-	center := geometry.V(float64(width)/2, float64(height)/2)
-
 	sprite := u.OpaqueRenderer.NewSprite(image.LoadRGBA("test.png"))
 	for i := 0; i < 100; i++ {
 		linearVelocity := geometry.V(rand.Float64()*100, rand.Float64()*100)
-		u.createThing(sprite, center, linearVelocity)
+		u.createThing(sprite, graphics.Bounds().Center(), linearVelocity)
 	}
 
 	sprite2 := u.TransparentRenderer.NewSprite(image.LoadRGBA("test2.png"))
 	for i := 0; i < 100; i++ {
 		linearVelocity := geometry.V(rand.Float64(), rand.Float64()).MinusScalar(0.5).TimesScalar(100)
-		u.createThing(sprite2, center, linearVelocity)
+		u.createThing(sprite2, graphics.Bounds().Center(), linearVelocity)
 	}
 
 	for !graphics.Window.ShouldClose() {

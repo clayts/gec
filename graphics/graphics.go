@@ -6,6 +6,7 @@ import (
 
 	_ "image/png"
 
+	"github.com/clayts/gec/geometry"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -81,6 +82,11 @@ func MaximumTextureSize() int {
 	var v int32
 	gl.GetIntegerv(gl.MAX_TEXTURE_SIZE, &v)
 	return int(v)
+}
+
+func Bounds() geometry.Rectangle {
+	width, height := Window.GetSize()
+	return geometry.R(geometry.V(0, 0), geometry.V(float64(width), float64(height)))
 }
 
 func PanicOnError() {

@@ -13,8 +13,8 @@ import (
 
 type Universe struct {
 	UpdateProcedureSet                  set.Set[func()]
-	RenderProcedureSpace                space.Space[func(s geometry.Shape)]
-	Camera                              Camera
+	RenderProcedureSpace                space.Space[func(callShape geometry.Shape)]
+	Camera                              geometry.Transform
 	OpaqueRenderer, TransparentRenderer *sprites.Renderer
 	StepTime                            time.Time
 	StepDuration                        time.Duration
@@ -26,7 +26,7 @@ func NewUniverse() *Universe {
 	u.OpaqueRenderer = sprites.NewRenderer()
 	u.TransparentRenderer = sprites.NewRenderer()
 
-	u.Camera.Transform = geometry.T()
+	u.Camera = geometry.T()
 
 	u.StepTime = time.Now()
 
@@ -52,8 +52,8 @@ func (u *Universe) Step() {
 	u.OpaqueRenderer.Clear()
 	u.TransparentRenderer.Clear()
 
-	s := u.Camera.Shape()
-	u.RenderProcedureSpace.AllIntersecting(s, func(z *space.Zone[func(s geometry.Shape)]) bool {
+	s := u.Camera.Rectangle(graphics.Bounds())
+	u.RenderProcedureSpace.AllIntersecting(s, func(z *space.Zone[func(callShape geometry.Shape)]) bool {
 		z.Contents(s)
 		return true
 	})
