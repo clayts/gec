@@ -1,39 +1,39 @@
-package tree
+package space
 
 import (
 	geo "github.com/clayts/gec/geometry"
 )
 
-type branch struct {
-	parent         *branch
+type subSpace[T any] struct {
+	parent         *subSpace[T]
 	center, radius geo.Vector
-	children       [2]*branch
+	children       [2]*subSpace[T]
 	vertical       bool
 	upper          bool
-	leaves         []*Leaf
+	zones          []*Zone[T]
 	size           int
 }
 
-func (b *branch) allLeaves(f func(l *Leaf) bool) bool {
+func (b *subSpace[T]) allLeaves(f func(z *Zone[T]) bool) bool {
 	if b == nil {
 		return true
 	}
-	for _, l := range b.leaves {
-		if !f(l) {
+	for _, z := range b.zones {
+		if !f(z) {
 			return false
 		}
 	}
 	return b.children[0].allLeaves(f) && b.children[1].allLeaves(f)
 }
 
-func (b *branch) allLeavesIntersectingSkipBounds(s geo.Shape, f func(l *Leaf) bool) bool {
+func (b *subSpace[T]) allLeavesIntersectingSkipBounds(s geo.Shape, f func(z *Zone[T]) bool) bool {
 	if b == nil {
 		return true
 	}
-	for _, l := range b.leaves {
-		if (s.ShapeType() == geo.RECTANGLE || geo.AllEdges(s, func(i int, g geo.Segment) bool { return g.AxisAligned() || !geo.LeftOf(g, l.shape) })) &&
-			(l.shape.ShapeType() == geo.RECTANGLE || geo.AllEdges(l.shape, func(i int, g geo.Segment) bool { return g.AxisAligned() || !geo.LeftOf(g, s) })) {
-			if !f(l) {
+	for _, z := range b.zones {
+		if (s.ShapeType() == geo.RECTANGLE || geo.AllEdges(s, func(i int, g geo.Segment) bool { return g.AxisAligned() || !geo.LeftOf(g, z.shape) })) &&
+			(z.shape.ShapeType() == geo.RECTANGLE || geo.AllEdges(z.shape, func(i int, g geo.Segment) bool { return g.AxisAligned() || !geo.LeftOf(g, s) })) {
+			if !f(z) {
 				return false
 			}
 		}
@@ -41,7 +41,7 @@ func (b *branch) allLeavesIntersectingSkipBounds(s geo.Shape, f func(l *Leaf) bo
 	return b.children[0].allLeavesIntersectingSkipBounds(s, f) && b.children[1].allLeavesIntersectingSkipBounds(s, f)
 }
 
-func (b *branch) allLeavesIntersecting(s geo.Shape, f func(l *Leaf) bool) bool {
+func (b *subSpace[T]) allLeavesIntersecting(s geo.Shape, f func(z *Zone[T]) bool) bool {
 	if b == nil {
 		return true
 	}
@@ -51,9 +51,9 @@ func (b *branch) allLeavesIntersecting(s geo.Shape, f func(l *Leaf) bool) bool {
 	if s.Bounds().Contains(b.bounds()) {
 		return b.allLeavesIntersectingSkipBounds(s, f)
 	}
-	for _, l := range b.leaves {
-		if geo.Intersects(s, l.shape) {
-			if !f(l) {
+	for _, z := range b.zones {
+		if geo.Intersects(s, z.shape) {
+			if !f(z) {
 				return false
 			}
 		}
@@ -61,38 +61,38 @@ func (b *branch) allLeavesIntersecting(s geo.Shape, f func(l *Leaf) bool) bool {
 	return b.children[0].allLeavesIntersecting(s, f) && b.children[1].allLeavesIntersecting(s, f)
 }
 
-func (b *branch) remove(l *Leaf) {
+func (b *subSpace[T]) remove(z *Zone[T]) {
 	// delete from list
-	finalIndex := len(b.leaves) - 1
-	b.leaves[l.index] = b.leaves[finalIndex]
-	b.leaves[l.index].index = l.index
-	b.leaves[finalIndex] = nil
-	b.leaves = b.leaves[:finalIndex]
+	finalIndex := len(b.zones) - 1
+	b.zones[z.index] = b.zones[finalIndex]
+	b.zones[z.index].index = z.index
+	b.zones[finalIndex] = nil
+	b.zones = b.zones[:finalIndex]
 
 	// update leaf
-	l.branch = nil
+	z.subSpace = nil
 
 	b.decrease()
 }
 
-func (b *branch) clean() {
+func (b *subSpace[T]) clean() {
 	if b.size <= maxCached {
 		if b.children[0] != nil {
-			for _, l := range b.children[0].leaves {
-				b.store(l)
+			for _, z := range b.children[0].zones {
+				b.store(z)
 			}
 			b.children[0] = nil
 		}
 		if b.children[1] != nil {
-			for _, l := range b.children[1].leaves {
-				b.store(l)
+			for _, z := range b.children[1].zones {
+				b.store(z)
 			}
 			b.children[1] = nil
 		}
 	}
 }
 
-func (b *branch) decrease() {
+func (b *subSpace[T]) decrease() {
 	b.size--
 	b.clean()
 	if b.parent != nil {
@@ -100,99 +100,99 @@ func (b *branch) decrease() {
 	}
 }
 
-func (b *branch) add(l *Leaf) {
+func (b *subSpace[T]) add(z *Zone[T]) {
 	// if size < max, cache this
 	// if size == max, distribute all
 	// if size > max,  distribute this
 	if b.size < maxCached {
-		b.store(l)
+		b.store(z)
 	} else {
 		if b.size == maxCached {
-			leaves := b.leaves
-			b.leaves = b.leaves[:0]
+			leaves := b.zones
+			b.zones = b.zones[:0]
 			for _, l2 := range leaves {
 				b.distribute(l2)
 			}
 		}
-		b.distribute(l)
+		b.distribute(z)
 	}
 	b.size++
 }
 
-func (b *branch) distribute(l *Leaf) {
+func (b *subSpace[T]) distribute(z *Zone[T]) {
 	if !b.vertical {
-		if l.shape.Bounds().Max.X < b.center.X {
-			b.demandChild(false).add(l)
+		if z.shape.Bounds().Max.X < b.center.X {
+			b.demandChild(false).add(z)
 			return
-		} else if l.shape.Bounds().Min.X > b.center.X {
-			b.demandChild(true).add(l)
+		} else if z.shape.Bounds().Min.X > b.center.X {
+			b.demandChild(true).add(z)
 			return
 		}
 	} else {
-		if l.shape.Bounds().Max.Y < b.center.Y {
-			b.demandChild(false).add(l)
+		if z.shape.Bounds().Max.Y < b.center.Y {
+			b.demandChild(false).add(z)
 			return
-		} else if l.shape.Bounds().Min.Y > b.center.Y {
-			b.demandChild(true).add(l)
+		} else if z.shape.Bounds().Min.Y > b.center.Y {
+			b.demandChild(true).add(z)
 			return
 		}
 	}
-	b.store(l)
+	b.store(z)
 }
 
-func (b *branch) store(l *Leaf) {
-	l.index = len(b.leaves)
-	l.branch = b
-	b.leaves = append(b.leaves, l)
+func (b *subSpace[T]) store(z *Zone[T]) {
+	z.index = len(b.zones)
+	z.subSpace = b
+	b.zones = append(b.zones, z)
 }
 
-func (b *branch) bounds() geo.Rectangle {
+func (b *subSpace[T]) bounds() geo.Rectangle {
 	return geo.R(b.center.Minus(b.radius), b.center.Plus(b.radius))
 }
 
-func (b *branch) demandParent() *branch {
+func (b *subSpace[T]) demandParent() *subSpace[T] {
 	if b.parent == nil {
 		if !b.vertical {
 			if !b.upper {
 				// horizontal, lower (is the lower half of a vertical) - make vertical, upper (will be upper half of a horizontal)
-				b.parent = &branch{
+				b.parent = &subSpace[T]{
 					center:   b.center.Plus(geo.V(0, b.radius.Y)),
 					radius:   b.radius.Times(geo.V(1, 2)),
 					vertical: true,
 					upper:    true,
-					children: [2]*branch{b, nil},
+					children: [2]*subSpace[T]{b, nil},
 					size:     b.size,
 				}
 			} else {
 				// horizontal, upper (is the upper half of a vertical) - make vertical, lower (will be lower half of a horizontal)
-				b.parent = &branch{
+				b.parent = &subSpace[T]{
 					center:   b.center.Minus(geo.V(0, b.radius.Y)),
 					radius:   b.radius.Times(geo.V(1, 2)),
 					vertical: true,
 					upper:    false,
-					children: [2]*branch{nil, b},
+					children: [2]*subSpace[T]{nil, b},
 					size:     b.size,
 				}
 			}
 		} else {
 			if !b.upper {
 				// vertical, lower  (is the lower half of a horizontal) - make horizontal, lower (will be lower half of a vertical)
-				b.parent = &branch{
+				b.parent = &subSpace[T]{
 					center:   b.center.Plus(geo.V(b.radius.X, 0)),
 					radius:   b.radius.Times(geo.V(2, 1)),
 					vertical: false,
 					upper:    false,
-					children: [2]*branch{b, nil},
+					children: [2]*subSpace[T]{b, nil},
 					size:     b.size,
 				}
 			} else {
 				// vertical, upper (is the upper half of a horizontal) - make horizontal, upper (will be upper half of a vertical)
-				b.parent = &branch{
+				b.parent = &subSpace[T]{
 					center:   b.center.Minus(geo.V(b.radius.X, 0)),
 					radius:   b.radius.Times(geo.V(2, 1)),
 					vertical: false,
 					upper:    true,
-					children: [2]*branch{nil, b},
+					children: [2]*subSpace[T]{nil, b},
 					size:     b.size,
 				}
 			}
@@ -202,12 +202,12 @@ func (b *branch) demandParent() *branch {
 	return b.parent
 }
 
-func (b *branch) demandChild(upper bool) *branch {
+func (b *subSpace[T]) demandChild(upper bool) *subSpace[T] {
 	if !upper {
 		if b.children[0] == nil {
 			if !b.vertical {
 				radius := b.radius.Over(geo.V(2, 1))
-				b.children[0] = &branch{
+				b.children[0] = &subSpace[T]{
 					parent:   b,
 					center:   b.center.Minus(geo.V(radius.X, 0)),
 					radius:   radius,
@@ -216,7 +216,7 @@ func (b *branch) demandChild(upper bool) *branch {
 				}
 			} else {
 				radius := b.radius.Over(geo.V(1, 2))
-				b.children[0] = &branch{
+				b.children[0] = &subSpace[T]{
 					parent:   b,
 					center:   b.center.Minus(geo.V(0, radius.Y)),
 					radius:   radius,
@@ -230,7 +230,7 @@ func (b *branch) demandChild(upper bool) *branch {
 	if b.children[1] == nil {
 		if !b.vertical {
 			radius := b.radius.Over(geo.V(2, 1))
-			b.children[1] = &branch{
+			b.children[1] = &subSpace[T]{
 				parent:   b,
 				center:   b.center.Plus(geo.V(radius.X, 0)),
 				radius:   radius,
@@ -239,7 +239,7 @@ func (b *branch) demandChild(upper bool) *branch {
 			}
 		} else {
 			radius := b.radius.Over(geo.V(1, 2))
-			b.children[1] = &branch{
+			b.children[1] = &subSpace[T]{
 				parent:   b,
 				center:   b.center.Plus(geo.V(0, radius.Y)),
 				radius:   radius,

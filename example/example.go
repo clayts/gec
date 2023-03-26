@@ -7,22 +7,21 @@ import (
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/image"
+	"github.com/clayts/gec/space"
 	"github.com/clayts/gec/sprites"
-	"github.com/clayts/gec/tree"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 func main() {
-	space := tree.New()
-
-	leaves := []*tree.Leaf{}
+	spc := space.New[struct{}]()
+	leaves := []*space.Zone[struct{}]{}
 	for i := 0; i < 100000; i++ {
 		v := geometry.V(rand.Float64()*100000, rand.Float64()*100000)
-		x := space.NewLeaf().SetShape(geometry.R(v, v.Plus(geometry.V(10, 10)))).Enable()
+		x := spc.NewLeaf().SetShape(geometry.R(v, v.Plus(geometry.V(10, 10)))).Enable()
 		leaves = append(leaves, x)
 	}
 	fmt.Println("-------------")
-	space.AllLeavesIntersecting(geometry.R(geometry.V(0, 0), geometry.V(1000, 1000)), func(l *tree.Leaf) bool {
+	spc.AllZonesIntersecting(geometry.R(geometry.V(0, 0), geometry.V(1000, 1000)), func(l *space.Zone[struct{}]) bool {
 		fmt.Println("found", l)
 		return true
 	})
@@ -30,7 +29,7 @@ func main() {
 	for _, l := range leaves {
 		l.Disable()
 	}
-	fmt.Println(space)
+	fmt.Println(spc)
 
 	// ------------------------------------------------------
 
