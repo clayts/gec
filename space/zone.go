@@ -10,7 +10,7 @@ type Zone[T any] struct {
 	Contents T
 }
 
-func (spc *Space[T]) NewLeaf() *Zone[T] {
+func (spc *Space[T]) NewZone() *Zone[T] {
 	return &Zone[T]{space: spc}
 }
 
@@ -41,3 +41,5 @@ func (z *Zone[T]) SetContents(c T) *Zone[T] {
 	z.Contents = c
 	return z
 }
+
+func (z *Zone[T]) Shape() geo.Shape { return z.shape }

@@ -14,23 +14,26 @@ type subSpace[T any] struct {
 	size           int
 }
 
-func (b *subSpace[T]) allLeaves(f func(z *Zone[T]) bool) bool {
+func (b *subSpace[T]) all(f func(z *Zone[T]) bool) bool {
 	if b == nil {
 		return true
 	}
-	for _, z := range b.zones {
+
+	for i := len(b.zones) - 1; i >= 0; i-- {
+		z := b.zones[i]
 		if !f(z) {
 			return false
 		}
 	}
-	return b.children[0].allLeaves(f) && b.children[1].allLeaves(f)
+	return b.children[0].all(f) && b.children[1].all(f)
 }
 
-func (b *subSpace[T]) allLeavesIntersectingSkipBounds(s geo.Shape, f func(z *Zone[T]) bool) bool {
+func (b *subSpace[T]) allIntersectingSkipBounds(s geo.Shape, f func(z *Zone[T]) bool) bool {
 	if b == nil {
 		return true
 	}
-	for _, z := range b.zones {
+	for i := len(b.zones) - 1; i >= 0; i-- {
+		z := b.zones[i]
 		if (s.ShapeType() == geo.RECTANGLE || geo.AllEdges(s, func(i int, g geo.Segment) bool { return g.AxisAligned() || !geo.LeftOf(g, z.shape) })) &&
 			(z.shape.ShapeType() == geo.RECTANGLE || geo.AllEdges(z.shape, func(i int, g geo.Segment) bool { return g.AxisAligned() || !geo.LeftOf(g, s) })) {
 			if !f(z) {
@@ -38,10 +41,10 @@ func (b *subSpace[T]) allLeavesIntersectingSkipBounds(s geo.Shape, f func(z *Zon
 			}
 		}
 	}
-	return b.children[0].allLeavesIntersectingSkipBounds(s, f) && b.children[1].allLeavesIntersectingSkipBounds(s, f)
+	return b.children[0].allIntersectingSkipBounds(s, f) && b.children[1].allIntersectingSkipBounds(s, f)
 }
 
-func (b *subSpace[T]) allLeavesIntersecting(s geo.Shape, f func(z *Zone[T]) bool) bool {
+func (b *subSpace[T]) allIntersecting(s geo.Shape, f func(z *Zone[T]) bool) bool {
 	if b == nil {
 		return true
 	}
@@ -49,28 +52,33 @@ func (b *subSpace[T]) allLeavesIntersecting(s geo.Shape, f func(z *Zone[T]) bool
 		return true
 	}
 	if s.Bounds().Contains(b.bounds()) {
-		return b.allLeavesIntersectingSkipBounds(s, f)
+		return b.allIntersectingSkipBounds(s, f)
 	}
-	for _, z := range b.zones {
+	for i := len(b.zones) - 1; i >= 0; i-- {
+		z := b.zones[i]
 		if geo.Intersects(s, z.shape) {
 			if !f(z) {
 				return false
 			}
 		}
 	}
-	return b.children[0].allLeavesIntersecting(s, f) && b.children[1].allLeavesIntersecting(s, f)
+	return b.children[0].allIntersecting(s, f) && b.children[1].allIntersecting(s, f)
 }
 
 func (b *subSpace[T]) remove(z *Zone[T]) {
-	// delete from list
-	finalIndex := len(b.zones) - 1
-	b.zones[z.index] = b.zones[finalIndex]
-	b.zones[z.index].index = z.index
-	b.zones[finalIndex] = nil
-	b.zones = b.zones[:finalIndex]
 
-	// update leaf
-	z.subSpace = nil
+	if z.index != -1 {
+		finalIndex := len(b.zones) - 1
+		if finalIndex != 0 {
+			finalEntity := b.zones[finalIndex]
+			b.zones[z.index] = finalEntity
+			finalEntity.index = z.index
+			b.zones[finalIndex] = nil
+		}
+		b.zones = b.zones[:finalIndex]
+		z.index = -1
+		z.subSpace = nil
+	}
 
 	b.decrease()
 }

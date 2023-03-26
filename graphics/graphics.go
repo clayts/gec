@@ -1,7 +1,6 @@
 package graphics
 
 import (
-	"log"
 	"runtime"
 	"time"
 
@@ -11,29 +10,24 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-var (
-	lastFrame time.Time
-	thisFrame time.Time
-)
-
-func DeltaTime() float64 {
-	return thisFrame.Sub(lastFrame).Seconds()
-}
-
 func Initialize(title string) {
 	runtime.LockOSThread()
 
-	//GLFW
+	// GLFW
 	initWindow(title)
 
-	//GL
+	// GL
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-	version := gl.GoStr(gl.GetString(gl.VERSION))
-	log.Println("OpenGL version", version)
-	thisFrame = time.Now()
-	lastFrame = thisFrame
+
+	// wait for window to be properly initialized
+	start := time.Now()
+	for w := 1; w == 1; w, _ = Window.GetSize() {
+		if time.Since(start).Seconds() > 1 {
+			panic("could not initialize window")
+		}
+	}
 }
 
 func Clear(color, depth, stencil bool) {
@@ -71,8 +65,6 @@ func Clear(color, depth, stencil bool) {
 func Render() {
 	glfw.PollEvents()
 	Window.SwapBuffers()
-	lastFrame = thisFrame
-	thisFrame = time.Now()
 }
 
 func Delete() {

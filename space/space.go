@@ -19,13 +19,13 @@ type Space[T any] struct {
 func New[T any]() *Space[T] { return &Space[T]{} }
 
 // Runs f(*Leaf) on every *Leaf in the Tree which intersects with s.
-func (spc *Space[T]) AllZonesIntersecting(s geo.Shape, f func(z *Zone[T]) bool) bool {
-	return spc.universal.allLeaves(f) && spc.local.allLeavesIntersecting(s, f)
+func (spc *Space[T]) AllIntersecting(s geo.Shape, f func(z *Zone[T]) bool) bool {
+	return spc.universal.all(f) && spc.local.allIntersecting(s, f)
 }
 
 // Runs f(*Leaf) on every *Leaf in the Tree.
-func (spc *Space[T]) AllZones(f func(z *Zone[T]) bool) bool {
-	return spc.universal.allLeaves(f) && spc.local.allLeaves(f)
+func (spc *Space[T]) All(f func(z *Zone[T]) bool) bool {
+	return spc.universal.all(f) && spc.local.all(f)
 }
 
 func (spc *Space[T]) add(z *Zone[T]) {

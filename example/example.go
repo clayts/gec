@@ -1,87 +1,85 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 
+	"github.com/clayts/gec"
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/image"
-	"github.com/clayts/gec/space"
 	"github.com/clayts/gec/sprites"
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-func main() {
-	spc := space.New[struct{}]()
-	leaves := []*space.Zone[struct{}]{}
-	for i := 0; i < 100000; i++ {
-		v := geometry.V(rand.Float64()*100000, rand.Float64()*100000)
-		x := spc.NewLeaf().SetShape(geometry.R(v, v.Plus(geometry.V(10, 10)))).Enable()
-		leaves = append(leaves, x)
-	}
-	fmt.Println("-------------")
-	spc.AllZonesIntersecting(geometry.R(geometry.V(0, 0), geometry.V(1000, 1000)), func(l *space.Zone[struct{}]) bool {
-		fmt.Println("found", l)
-		return true
+type universe struct {
+	*gec.Universe
+}
+
+func newUniverse() *universe {
+	u := &universe{}
+
+	u.Universe = gec.NewUniverse()
+
+	graphics.Window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		switch key {
+		case glfw.KeyEscape:
+			graphics.Window.SetShouldClose(true)
+		}
 	})
-	fmt.Println("-------------")
-	for _, l := range leaves {
-		l.Disable()
-	}
-	fmt.Println(spc)
 
-	// ------------------------------------------------------
+	return u
+}
 
-	graphics.Initialize("test")
+func (u *universe) createThing(sprite sprites.Sprite, position geometry.Vector, linearVelocity geometry.Vector) {
+	transform := geometry.Translation(position)
+
+	depth := rand.Float32()
+
+	renderZone := u.RenderProcedureSpace.NewZone().
+		SetContents(func(s geometry.Shape) {
+			sprite.Draw(transform, depth)
+		}).
+		SetShape(transform.Rectangle(sprite.Bounds())).
+		Enable()
+
+	u.UpdateProcedureSet.NewEntity().
+		SetContents(func() {
+			transform = geometry.Translation(linearVelocity.TimesScalar(u.StepDuration.Seconds())).Times(transform)
+			renderZone.SetShape(transform.Rectangle(sprite.Bounds()))
+			if !geometry.Contains(u.Camera.Shape(), renderZone.Shape()) {
+				linearVelocity = geometry.V(0, 0).Minus(linearVelocity)
+			}
+		}).
+		Enable()
+}
+
+func main() {
+	graphics.Initialize("example")
 	defer graphics.Delete()
 
 	sprites.Initialize()
 	defer sprites.Delete()
 
-	r := sprites.NewRenderer()
-	defer r.Delete()
+	u := newUniverse()
+	defer u.Delete()
 
-	s := r.NewSprite(image.LoadRGBA("test.png"))
-	ts := make([]geometry.Transform, 10000)
-	ds := make([]float32, len(ts))
-	for i := range ts {
-		ts[i] = geometry.Translation(geometry.V(rand.Float64()*100000, rand.Float64()*50000))
-		ds[i] = rand.Float32()
+	width, height := graphics.Window.GetSize()
+	center := geometry.V(float64(width)/2, float64(height)/2)
+
+	sprite := u.OpaqueRenderer.NewSprite(image.LoadRGBA("test.png"))
+	for i := 0; i < 100; i++ {
+		linearVelocity := geometry.V(rand.Float64()*100, rand.Float64()*100)
+		u.createThing(sprite, center, linearVelocity)
 	}
 
-	s2 := r.NewSprite(image.LoadRGBA("test2.png"))
-	ts2 := make([]geometry.Transform, 10000)
-	ds2 := make([]float32, len(ts))
-	for i := range ts2 {
-		ts2[i] = geometry.Translation(geometry.V(rand.Float64()*100000, rand.Float64()*50000))
-		ds2[i] = rand.Float32()
+	sprite2 := u.TransparentRenderer.NewSprite(image.LoadRGBA("test2.png"))
+	for i := 0; i < 100; i++ {
+		linearVelocity := geometry.V(rand.Float64(), rand.Float64()).MinusScalar(0.5).TimesScalar(100)
+		u.createThing(sprite2, center, linearVelocity)
 	}
 
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
 	for !graphics.Window.ShouldClose() {
-		dt := graphics.DeltaTime()
-		fmt.Println(1 / dt)
-		gl.DepthMask(true)
-		gl.Disable(gl.BLEND)
-		graphics.Clear(true, true, false)
-		r.Clear()
-		for i, t := range ts {
-			ts[i] = geometry.RotationAround(geometry.Angle(36*dt), t.Vector(s.Bounds().Center())).Times(t)
-			s.Draw(t, ds[i])
-		}
-		r.Render()
-		r.Clear()
-		for i, t := range ts2 {
-			ts2[i] = geometry.RotationAround(geometry.Angle(36*dt), t.Vector(s2.Bounds().Center())).Times(t)
-			s2.Draw(t, ds2[i])
-		}
-		gl.DepthMask(false)
-		gl.Enable(gl.BLEND)
-		gl.BlendFunc(gl.ONE, gl.ONE)
-		r.Render()
-		graphics.Render()
+		u.Step()
 	}
 
 }
