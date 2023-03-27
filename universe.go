@@ -61,7 +61,7 @@ func (u *Universe) Step() {
 	u.OpaqueRenderer.Render()
 	gl.DepthMask(false)
 	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.ONE, gl.ONE)
+	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
 	u.TransparentRenderer.Render()
 	graphics.Render()
 }

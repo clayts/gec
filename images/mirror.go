@@ -1,4 +1,4 @@
-package image
+package images
 
 import (
 	"image"
@@ -23,8 +23,8 @@ func (i mirroredXImage) Bounds() image.Rectangle {
 
 func (i mirroredXImage) At(x, y int) color.Color {
 	max := i.Image.Bounds().Max.X
-	if x > max {
-		x = max - (x - max)
+	if x >= max {
+		x = (max - (x - max)) - 1
 	}
 	return i.Image.At(x, y)
 }
@@ -39,8 +39,8 @@ func (i mirroredYImage) Bounds() image.Rectangle {
 
 func (i mirroredYImage) At(x, y int) color.Color {
 	max := i.Image.Bounds().Max.Y
-	if y > max {
-		y = max - (y - max)
+	if y >= max {
+		y = (max - (y - max)) - 1
 	}
 	return i.Image.At(x, y)
 }

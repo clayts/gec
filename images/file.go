@@ -1,9 +1,10 @@
-package image
+package images
 
 import (
 	"fmt"
 	"image"
 	"image/draw"
+	"image/png"
 	"os"
 )
 
@@ -23,4 +24,17 @@ func LoadRGBA(file string) *image.RGBA {
 	}
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
 	return rgba
+}
+
+func SaveImage(filename string, img image.Image) {
+	imgFile, err := os.Create(filename)
+	defer func() {
+		if err := imgFile.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	if err != nil {
+		panic(err)
+	}
+	png.Encode(imgFile, img)
 }

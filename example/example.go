@@ -6,7 +6,7 @@ import (
 	"github.com/clayts/gec"
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
-	"github.com/clayts/gec/image"
+	"github.com/clayts/gec/images"
 	"github.com/clayts/gec/sprites"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -32,7 +32,6 @@ func newUniverse() *universe {
 
 func (u *universe) createThing(sprite sprites.Sprite, position geometry.Vector, linearVelocity geometry.Vector) {
 	transform := geometry.Translation(position)
-
 	depth := rand.Float32()
 
 	renderZone := u.RenderProcedureSpace.NewZone().
@@ -63,16 +62,22 @@ func main() {
 	u := newUniverse()
 	defer u.Delete()
 
-	sprite := u.OpaqueRenderer.NewSprite(image.LoadRGBA("test.png"))
+	sprite := u.OpaqueRenderer.MakeSprite(images.LoadRGBA("test.png"))
 	for i := 0; i < 100; i++ {
-		position := geometry.V(rand.Float64()*(graphics.Bounds().Size().X-sprite.Bounds().Size().X), rand.Float64()*(graphics.Bounds().Size().Y-sprite.Bounds().Size().Y))
+		position := geometry.V(
+			rand.Float64()*(graphics.Bounds().Size().X-sprite.Bounds().Size().X),
+			rand.Float64()*(graphics.Bounds().Size().Y-sprite.Bounds().Size().Y),
+		)
 		linearVelocity := geometry.V(rand.Float64()*100, rand.Float64()*100)
 		u.createThing(sprite, position, linearVelocity)
 	}
 
-	sprite2 := u.TransparentRenderer.NewSprite(image.LoadRGBA("test2.png"))
+	sprite2 := u.TransparentRenderer.MakeSprite(images.LoadRGBA("test2.png"))
 	for i := 0; i < 100; i++ {
-		position := geometry.V(rand.Float64()*(graphics.Bounds().Size().X-sprite2.Bounds().Size().X), rand.Float64()*(graphics.Bounds().Size().Y-sprite2.Bounds().Size().Y))
+		position := geometry.V(
+			rand.Float64()*(graphics.Bounds().Size().X-sprite2.Bounds().Size().X),
+			rand.Float64()*(graphics.Bounds().Size().Y-sprite2.Bounds().Size().Y),
+		)
 		linearVelocity := geometry.V(rand.Float64(), rand.Float64()).MinusScalar(0.5).TimesScalar(100)
 		u.createThing(sprite2, position, linearVelocity)
 	}

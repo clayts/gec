@@ -1,4 +1,4 @@
-package noise
+package procgen
 
 import "github.com/ojrac/opensimplex-go"
 
@@ -18,14 +18,6 @@ func (s3 Source3D) Slice(z float64) Source2D {
 	}
 }
 
-func NewRandom4D(seed int64) Source4D {
+func NewNoise(seed int64) Source4D {
 	return opensimplex.NewNormalized(seed).Eval4
-}
-
-func NewRandom3D(seed int64) Source3D {
-	return opensimplex.NewNormalized(seed).Eval3
-}
-
-func NewRandom2D(seed int64) Source2D {
-	return opensimplex.NewNormalized(seed).Eval2
 }
