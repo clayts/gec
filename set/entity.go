@@ -1,6 +1,6 @@
 package set
 
-func (s *Set[T]) NewEntity() *Entity[T] {
+func (s *Set[T]) New() *Entity[T] {
 	e := &Entity[T]{set: s, index: -1}
 	return e
 }

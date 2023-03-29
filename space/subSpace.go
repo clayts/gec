@@ -34,8 +34,8 @@ func (b *subSpace[T]) allIntersectingSkipBounds(s geo.Shape, f func(z *Zone[T]) 
 	}
 	for i := len(b.zones) - 1; i >= 0; i-- {
 		z := b.zones[i]
-		if (s.ShapeType() == geo.RECTANGLE || geo.AllEdges(s, func(g geo.Segment) bool { return g.AxisAligned() || !geo.AllLeft(g, z.shape) })) &&
-			(z.shape.ShapeType() == geo.RECTANGLE || geo.AllEdges(z.shape, func(g geo.Segment) bool { return g.AxisAligned() || !geo.AllLeft(g, s) })) {
+		if (s.ShapeType() == geo.RECTANGLE || geo.AllEdges(s, func(g geo.Segment) bool { return g.AxisAligned() || !geo.AllAnticlockwise(g, z.shape) })) &&
+			(z.shape.ShapeType() == geo.RECTANGLE || geo.AllEdges(z.shape, func(g geo.Segment) bool { return g.AxisAligned() || !geo.AllAnticlockwise(g, s) })) {
 			if !f(z) {
 				return false
 			}

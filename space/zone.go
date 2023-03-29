@@ -10,8 +10,8 @@ type Zone[T any] struct {
 	Contents T
 }
 
-func (spc *Space[T]) NewZone() *Zone[T] {
-	return &Zone[T]{space: spc}
+func (spc *Space[T]) New(s geo.Shape) *Zone[T] {
+	return &Zone[T]{space: spc, shape: s}
 }
 
 func (z *Zone[T]) Enable() *Zone[T] {

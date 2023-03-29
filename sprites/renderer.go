@@ -95,7 +95,10 @@ func (r *Renderer) pack() {
 
 	// Determine locations
 	for _, box := range boxes {
-		for i := len(spaces) - 1; i >= 0; i-- {
+		for i := len(spaces) - 1; i >= -1; i-- {
+			if i == -1 {
+				panic("maximum texture size exceeded")
+			}
 			space := spaces[i]
 			if box.w <= space.w && box.h <= space.h {
 				// found the space; add the box to its top-left corner

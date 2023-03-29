@@ -52,14 +52,14 @@ func Len(s Shape) int {
 	return int(s.ShapeType())
 }
 
-// AllRight returns true if all of s is to the right of g[1], from the perspective of g[0]
-func AllRight(g Segment, s Shape) bool {
+// AllClockwise returns true if all of s is clockwise of g[1], from the perspective of g[0]
+func AllClockwise(g Segment, s Shape) bool {
 	line := g[1].Minus(g[0])
 	return AllVertices(s, func(i int, v Vector) bool { return v.Minus(g[0]).Cross(line) > 0 })
 }
 
-// AllLeft returns true if all of s is to the left of g[1], from the perspective of g[0]
-func AllLeft(g Segment, s Shape) bool {
+// AllAnticlockwise returns true if all of s is anticlockwise of g[1], from the perspective of g[0]
+func AllAnticlockwise(g Segment, s Shape) bool {
 	line := g[1].Minus(g[0])
 	return AllVertices(s, func(i int, v Vector) bool { return v.Minus(g[0]).Cross(line) < 0 })
 }
@@ -70,7 +70,7 @@ func Contains(s, s2 Shape) bool {
 }
 
 func ContainsSkipBoundsCheck(s, s2 Shape) bool {
-	return (s.ShapeType() == RECTANGLE || AllEdges(s, func(g Segment) bool { return g.AxisAligned() || AllRight(g, s2) }))
+	return s.ShapeType() == RECTANGLE || AllEdges(s, func(g Segment) bool { return g.AxisAligned() || AllClockwise(g, s2) })
 }
 
 func Intersects(s, s2 Shape) bool {
@@ -78,6 +78,6 @@ func Intersects(s, s2 Shape) bool {
 }
 
 func IntersectsSkipBoundsCheck(s, s2 Shape) bool {
-	return (s.ShapeType() == RECTANGLE || AllEdges(s, func(g Segment) bool { return g.AxisAligned() || !AllLeft(g, s2) })) &&
-		(s2.ShapeType() == RECTANGLE || AllEdges(s2, func(g Segment) bool { return g.AxisAligned() || !AllLeft(g, s) }))
+	return (s.ShapeType() == RECTANGLE || AllEdges(s, func(g Segment) bool { return g.AxisAligned() || !AllAnticlockwise(g, s2) })) &&
+		(s2.ShapeType() == RECTANGLE || AllEdges(s2, func(g Segment) bool { return g.AxisAligned() || !AllAnticlockwise(g, s) }))
 }

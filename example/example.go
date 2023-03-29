@@ -3,22 +3,26 @@ package main
 import (
 	"math/rand"
 
-	"github.com/clayts/gec"
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/images"
 	"github.com/clayts/gec/sprites"
+	"github.com/clayts/gec/systems"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 type universe struct {
-	*gec.Universe
+	systems struct {
+		render *systems.Render
+		update *systems.Update
+	}
 }
 
 func newUniverse() *universe {
 	u := &universe{}
 
-	u.Universe = gec.NewUniverse()
+	u.systems.render = systems.NewRender()
+	u.systems.update = systems.NewUpdate()
 
 	graphics.Window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		switch key {
@@ -34,22 +38,27 @@ func (u *universe) createThing(sprite sprites.Sprite, position geometry.Vector, 
 	transform := geometry.Translation(position)
 	depth := rand.Float32()
 
-	renderZone := u.RenderProcedureSpace.NewZone().
+	renderZone := u.systems.render.Components.
+		New(transform.Rectangle(sprite.Bounds())).
 		SetContents(func(callShape geometry.Shape) {
 			sprite.Draw(transform, depth)
 		}).
-		SetShape(transform.Rectangle(sprite.Bounds())).
 		Enable()
 
-	u.UpdateProcedureSet.NewEntity().
+	u.systems.update.Components.
+		New().
 		SetContents(func() {
-			transform = geometry.Translation(linearVelocity.TimesScalar(u.StepDuration.Seconds())).Times(transform)
+			transform = geometry.Translation(linearVelocity.TimesScalar(u.systems.update.StepDuration.Seconds())).Times(transform)
 			renderZone.SetShape(transform.Rectangle(sprite.Bounds()))
-			if !geometry.Contains(u.Camera.Rectangle(graphics.Bounds()), renderZone.Shape()) {
+			if !geometry.Contains(u.systems.render.Camera.Rectangle(graphics.Bounds()), renderZone.Shape()) {
 				linearVelocity = geometry.V(0, 0).Minus(linearVelocity)
 			}
 		}).
 		Enable()
+}
+
+func (u *universe) delete() {
+	u.systems.render.Delete()
 }
 
 func main() {
@@ -60,9 +69,9 @@ func main() {
 	defer sprites.Delete()
 
 	u := newUniverse()
-	defer u.Delete()
+	defer u.delete()
 
-	sprite := u.OpaqueRenderer.MakeSprite(images.LoadRGBA("test.png"))
+	sprite := u.systems.render.OpaqueRenderer.MakeSprite(images.LoadRGBA("test.png"))
 	for i := 0; i < 100; i++ {
 		position := geometry.V(
 			rand.Float64()*(graphics.Bounds().Size().X-sprite.Bounds().Size().X),
@@ -72,7 +81,7 @@ func main() {
 		u.createThing(sprite, position, linearVelocity)
 	}
 
-	sprite2 := u.TransparentRenderer.MakeSprite(images.LoadRGBA("test2.png"))
+	sprite2 := u.systems.render.TransparentRenderer.MakeSprite(images.LoadRGBA("test2.png"))
 	for i := 0; i < 100; i++ {
 		position := geometry.V(
 			rand.Float64()*(graphics.Bounds().Size().X-sprite2.Bounds().Size().X),
@@ -83,7 +92,8 @@ func main() {
 	}
 
 	for !graphics.Window.ShouldClose() {
-		u.Step()
+		u.systems.update.Step()
+		u.systems.render.Render()
 	}
 
 }

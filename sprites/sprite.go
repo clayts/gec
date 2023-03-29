@@ -12,10 +12,6 @@ type Sprite struct {
 }
 
 func (r *Renderer) MakeSprite(img image.Image) Sprite {
-	s := Sprite{
-		renderer: r,
-		index:    len(r.sources),
-	}
 	r.sources = append(r.sources, struct {
 		location [3]float32
 		size     [2]float32
@@ -24,15 +20,10 @@ func (r *Renderer) MakeSprite(img image.Image) Sprite {
 		image: img,
 		size:  [2]float32{float32(img.Bounds().Dx()), float32(img.Bounds().Dy())},
 	})
-	return s
-}
-
-func (r *Renderer) MakeSprites(imgs []image.Image) []Sprite {
-	ss := make([]Sprite, len(imgs))
-	for i, img := range imgs {
-		ss[i] = r.MakeSprite(img)
+	return Sprite{
+		renderer: r,
+		index:    len(r.sources) - 1,
 	}
-	return ss
 }
 
 func (s Sprite) Draw(dst geo.Transform, depth float32) {
@@ -46,7 +37,11 @@ func (s Sprite) Draw(dst geo.Transform, depth float32) {
 	)
 }
 
-func (s Sprite) Bounds() geo.Rectangle {
+func (s Sprite) Size() geo.Vector {
 	src := s.renderer.sources[s.index]
-	return geo.R(geo.V(0, 0), geo.V(float64(src.size[0]), float64(src.size[1])))
+	return geo.V(float64(src.size[0]), float64(src.size[1]))
+}
+
+func (s Sprite) Bounds() geo.Rectangle {
+	return geo.R(geo.V(0, 0), s.Size())
 }

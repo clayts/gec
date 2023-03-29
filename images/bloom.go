@@ -12,16 +12,16 @@ import (
 func Bloom(img image.Image, radius int, glow float64) image.Image {
 
 	imgSize := img.Bounds().Size()
-	newSize := image.Rect(0, 0, imgSize.X+((radius+1)*2), imgSize.Y+((radius+1)*2))
+	newSize := image.Rect(0, 0, imgSize.X+((radius+2)*2), imgSize.Y+((radius+2)*2))
 
 	extended := image.NewRGBA(newSize)
 	for x := 0; x < imgSize.X; x++ {
 		for y := 0; y < imgSize.Y; y++ {
-			extended.Set(radius+x+1, radius+y+1, img.At(x, y))
+			extended.Set(radius+x+2, radius+y+2, img.At(x, y))
 		}
 	}
 
-	newImg := effect.Dilate(extended, 1)
+	newImg := effect.Dilate(extended, 2)
 
 	newImg = blur.Gaussian(newImg, float64(radius))
 	for x := 0; x < newSize.Max.X; x++ {
