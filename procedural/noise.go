@@ -1,4 +1,4 @@
-package procgen
+package procedural
 
 import "github.com/ojrac/opensimplex-go"
 
