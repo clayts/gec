@@ -10,7 +10,7 @@ import (
 )
 
 type Renderer struct {
-	renderer     *ren.Renderer
+	renderer     *ren.InstanceRenderer
 	textureArray gfx.TextureArray
 	sources      []struct {
 		location [3]float32
@@ -28,7 +28,7 @@ func (r *Renderer) Clear() {
 	if r.renderer == nil {
 		return
 	}
-	r.renderer.Clear()
+	r.renderer.ClearInstances()
 }
 
 func (r *Renderer) Render() {
@@ -55,7 +55,11 @@ func (r *Renderer) initialize() {
 	if r.renderer != nil {
 		return
 	}
-	r.renderer = ren.NewRenderer(program, gfx.POINTS, "dstTransform", "dstDepth", "srcLocation", "srcSize")
+	r.renderer = ren.NewInstanceRenderer(program, gfx.TRIANGLE_STRIP, []string{"position"}, "dstTransform", "dstDepth", "srcLocation", "srcSize")
+	r.renderer.Draw(0, 0)
+	r.renderer.Draw(0, 1)
+	r.renderer.Draw(1, 0)
+	r.renderer.Draw(1, 1)
 	r.pack()
 }
 

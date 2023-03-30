@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"fmt"
 	"strconv"
 
 	gfx "github.com/clayts/gec/graphics"
@@ -14,7 +15,7 @@ type buffer struct {
 	changed bool
 }
 
-func newBuffer(vao gfx.VAO, attributes []gfx.Attribute, layout ...string) *buffer {
+func newBuffer(vao gfx.VAO, attributes []gfx.Attribute, divisor uint32, layout ...string) *buffer {
 	b := &buffer{}
 	b.vbo = gfx.NewVBO()
 
@@ -53,7 +54,7 @@ func newBuffer(vao gfx.VAO, attributes []gfx.Attribute, layout ...string) *buffe
 	}
 
 	for _, a := range layoutData {
-		vao.SetAttribute(a.location, a.offset, a.size, b.stride, 0, b.vbo)
+		vao.SetAttribute(a.location, a.offset, a.size, b.stride, divisor, b.vbo)
 	}
 	return b
 
@@ -106,7 +107,7 @@ func NewRenderer(program gfx.Program, mode gfx.Mode, vertexLayout ...string) *Re
 	r.mode = mode
 	r.program = program
 	r.vao = gfx.NewVAO()
-	r.vertices = newBuffer(r.vao, r.program.Attributes(), vertexLayout...)
+	r.vertices = newBuffer(r.vao, r.program.Attributes(), 0, vertexLayout...)
 	return r
 }
 
@@ -144,13 +145,16 @@ func NewInstanceRenderer(program gfx.Program, mode gfx.Mode, vertexLayout []stri
 	r.mode = mode
 	r.program = program
 	r.vao = gfx.NewVAO()
-	r.vertices = newBuffer(r.vao, r.program.Attributes(), vertexLayout...)
-	r.instances = newBuffer(r.vao, r.program.Attributes(), vertexLayout...)
+	r.vertices = newBuffer(r.vao, r.program.Attributes(), 0, vertexLayout...)
+	r.instances = newBuffer(r.vao, r.program.Attributes(), 1, instanceLayout...)
 	return r
 }
 
 func (r *InstanceRenderer) Clear() {
 	r.vertices.clear()
+}
+
+func (r *InstanceRenderer) ClearInstances() {
 	r.instances.clear()
 }
 
@@ -163,9 +167,10 @@ func (r *InstanceRenderer) DrawInstance(instance ...float32) {
 }
 
 func (r *InstanceRenderer) Render() {
-	r.vertices.sync()
-	r.instances.sync()
 	if vc, ic := r.vertices.count(), r.instances.count(); vc > 0 && ic > 0 {
+		fmt.Println("instanced render", vc, ic)
+		r.vertices.sync()
+		r.instances.sync()
 		r.program.DrawInstanced(r.vao, r.mode, 0, vc, ic)
 	}
 }

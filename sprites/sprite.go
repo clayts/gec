@@ -29,7 +29,7 @@ func (r *Renderer) MakeSprite(img image.Image) Sprite {
 func (s Sprite) Draw(dst geo.Transform, depth float32) {
 	s.renderer.initialize()
 	src := s.renderer.sources[s.index]
-	s.renderer.renderer.Draw(
+	s.renderer.renderer.DrawInstance(
 		float32(dst[0][0]), float32(dst[0][1]), float32(dst[0][2]), float32(dst[1][0]), float32(dst[1][1]), float32(dst[1][2]),
 		depth,
 		src.location[0], src.location[1], src.location[2],
