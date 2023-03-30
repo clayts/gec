@@ -14,11 +14,12 @@ func NewVAO() VAO {
 	return VAO(v)
 }
 
-func (v VAO) SetAttribute(a AttributeLocation, offset, size, stride int32, vbo VBO) {
+func (v VAO) SetAttribute(a AttributeLocation, offset, size, stride int32, divisor uint32, vbo VBO) {
 	gl.BindVertexArray(v.GL())
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo.GL())
 	gl.EnableVertexAttribArray(a.GL())
 	gl.VertexAttribPointerWithOffset(a.GL(), size, vbo.Type(), vbo.Normalized(), stride*4, uintptr(offset*4))
+	gl.VertexAttribDivisor(a.GL(), divisor)
 }
 
 func (v VAO) GL() uint32 { return uint32(v) }

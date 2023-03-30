@@ -27,6 +27,12 @@ func (p Program) Draw(vao VAO, mode Mode, firstVertex, vertexCount int32) {
 	gl.DrawArrays(mode.GL(), firstVertex, vertexCount)
 }
 
+func (p Program) DrawInstanced(vao VAO, mode Mode, firstVertex, vertexCount, instanceCount int32) {
+	gl.UseProgram(p.GL())
+	gl.BindVertexArray(vao.GL())
+	gl.DrawArraysInstanced(mode.GL(), firstVertex, vertexCount, instanceCount)
+}
+
 func (p Program) Attributes() []Attribute {
 	var attributeCount int32
 	gl.GetProgramiv(p.GL(), gl.ACTIVE_ATTRIBUTES, &attributeCount)

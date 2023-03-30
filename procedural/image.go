@@ -26,3 +26,7 @@ func (i Image) Bounds() image.Rectangle {
 func (i Image) ColorModel() color.Model {
 	return i.model
 }
+
+func NewUniformImage(c color.Color, bounds image.Rectangle, model color.Model) Image {
+	return NewImage(func(x, y int) color.Color { return c }, bounds, model)
+}

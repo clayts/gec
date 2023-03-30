@@ -6,10 +6,7 @@ import (
 	gfx "github.com/clayts/gec/graphics"
 )
 
-type Renderer struct {
-	mode    gfx.Mode
-	program gfx.Program
-	vao     gfx.VAO
+type buffer struct {
 	vbo     gfx.VBO
 	vboSize int
 	stride  int32
@@ -17,12 +14,9 @@ type Renderer struct {
 	changed bool
 }
 
-func NewRenderer(program gfx.Program, mode gfx.Mode, vertexLayout ...string) *Renderer {
-	r := &Renderer{}
-	r.mode = mode
-	r.program = program
-	r.vao = gfx.NewVAO()
-	r.vbo = gfx.NewVBO()
+func newBuffer(vao gfx.VAO, attributes []gfx.Attribute, layout ...string) *buffer {
+	b := &buffer{}
+	b.vbo = gfx.NewVBO()
 
 	layoutData := []struct {
 		location gfx.AttributeLocation
@@ -30,8 +24,7 @@ func NewRenderer(program gfx.Program, mode gfx.Mode, vertexLayout ...string) *Re
 		size     int32
 	}{}
 
-	attributes := r.program.Attributes()
-	for _, name := range vertexLayout {
+	for _, name := range layout {
 		var attribute gfx.Attribute
 		for _, a := range attributes {
 			if a.Name() == name {
@@ -52,50 +45,133 @@ func NewRenderer(program gfx.Program, mode gfx.Mode, vertexLayout ...string) *Re
 					location gfx.AttributeLocation
 					offset   int32
 					size     int32
-				}{location, r.stride, n})
+				}{location, b.stride, n})
 				location++
-				r.stride += n
+				b.stride += n
 			}
 		}
 	}
 
 	for _, a := range layoutData {
-		r.vao.SetAttribute(a.location, a.offset, a.size, r.stride, r.vbo)
+		vao.SetAttribute(a.location, a.offset, a.size, b.stride, 0, b.vbo)
 	}
+	return b
+
+}
+
+func (b *buffer) clear() {
+	b.data = b.data[:0]
+	b.changed = true
+}
+
+func (b *buffer) draw(data ...float32) {
+	if len(data) != int(b.stride) {
+		panic("incorrect vertex size, got " + strconv.Itoa(len(data)) + " expected " + strconv.Itoa(int(b.stride)))
+	}
+	b.data = append(b.data, data...)
+	b.changed = true
+}
+
+func (b *buffer) sync() {
+
+	if b.changed {
+		if len(b.data) <= b.vboSize {
+			b.vbo.SetDataSubsection(0, b.data...)
+		} else {
+			b.vbo.SetData(b.data...)
+			b.vboSize = len(b.data)
+		}
+		b.changed = false
+	}
+
+}
+
+func (b *buffer) count() int32 {
+	return int32(len(b.data)) / b.stride
+}
+
+func (b *buffer) delete() {
+	b.vbo.Delete()
+}
+
+type Renderer struct {
+	mode     gfx.Mode
+	program  gfx.Program
+	vao      gfx.VAO
+	vertices *buffer
+}
+
+func NewRenderer(program gfx.Program, mode gfx.Mode, vertexLayout ...string) *Renderer {
+	r := &Renderer{}
+	r.mode = mode
+	r.program = program
+	r.vao = gfx.NewVAO()
+	r.vertices = newBuffer(r.vao, r.program.Attributes(), vertexLayout...)
 	return r
 }
 
 func (r *Renderer) Clear() {
-	r.data = r.data[:0]
-	r.changed = true
+	r.vertices.clear()
 }
 
 func (r *Renderer) Draw(vertex ...float32) {
-	if len(vertex) != int(r.stride) {
-		panic("incorrect vertex size, got " + strconv.Itoa(len(vertex)) + " expected " + strconv.Itoa(int(r.stride)))
-	}
-	r.data = append(r.data, vertex...)
-	r.changed = true
+	r.vertices.draw(vertex...)
 }
 
 func (r *Renderer) Render() {
-	if len(r.data) == 0 {
-		return
+	if c := r.vertices.count(); c > 0 {
+		r.vertices.sync()
+		r.program.Draw(r.vao, r.mode, 0, c)
 	}
-	if r.changed {
-		if len(r.data) <= r.vboSize {
-			r.vbo.SetDataSubsection(0, r.data...)
-		} else {
-			r.vbo.SetData(r.data...)
-			r.vboSize = len(r.data)
-		}
-		r.changed = false
-	}
-	r.program.Draw(r.vao, r.mode, 0, int32(len(r.data))/r.stride)
 }
 
 func (r *Renderer) Delete() {
 	r.program.Delete()
 	r.vao.Delete()
-	r.vbo.Delete()
+	r.vertices.delete()
+}
+
+type InstanceRenderer struct {
+	mode      gfx.Mode
+	program   gfx.Program
+	vao       gfx.VAO
+	vertices  *buffer
+	instances *buffer
+}
+
+func NewInstanceRenderer(program gfx.Program, mode gfx.Mode, vertexLayout []string, instanceLayout ...string) *InstanceRenderer {
+	r := &InstanceRenderer{}
+	r.mode = mode
+	r.program = program
+	r.vao = gfx.NewVAO()
+	r.vertices = newBuffer(r.vao, r.program.Attributes(), vertexLayout...)
+	r.instances = newBuffer(r.vao, r.program.Attributes(), vertexLayout...)
+	return r
+}
+
+func (r *InstanceRenderer) Clear() {
+	r.vertices.clear()
+	r.instances.clear()
+}
+
+func (r *InstanceRenderer) Draw(vertex ...float32) {
+	r.vertices.draw(vertex...)
+}
+
+func (r *InstanceRenderer) DrawInstance(instance ...float32) {
+	r.instances.draw(instance...)
+}
+
+func (r *InstanceRenderer) Render() {
+	r.vertices.sync()
+	r.instances.sync()
+	if vc, ic := r.vertices.count(), r.instances.count(); vc > 0 && ic > 0 {
+		r.program.DrawInstanced(r.vao, r.mode, 0, vc, ic)
+	}
+}
+
+func (r *InstanceRenderer) Delete() {
+	r.vao.Delete()
+	r.vertices.delete()
+	r.instances.delete()
 }
