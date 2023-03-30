@@ -5,11 +5,12 @@ import (
 	"image/draw"
 	"sort"
 
+	"github.com/clayts/gec/geometry"
 	gfx "github.com/clayts/gec/graphics"
 	ren "github.com/clayts/gec/renderer"
 )
 
-type Renderer struct {
+type Sheet struct {
 	renderer     *ren.InstanceRenderer
 	textureArray gfx.TextureArray
 	sources      []struct {
@@ -19,30 +20,38 @@ type Renderer struct {
 	}
 }
 
-func NewRenderer() *Renderer {
-	r := &Renderer{}
+func NewSheet() *Sheet {
+	r := &Sheet{}
 	return r
 }
 
-func (r *Renderer) Clear() {
+func (r *Sheet) Clear() {
 	if r.renderer == nil {
 		return
 	}
 	r.renderer.ClearInstances()
 }
 
-func (r *Renderer) Render() {
+func (r *Sheet) Render(camera geometry.Transform) {
 	if r.renderer == nil {
 		return
 	}
-	program.SetUniform(textureArrayUniformLocation, gfx.TextureUnit(0).WithSetTextureArray(r.textureArray))
+
 	w, h := gfx.Window.GetSize()
 	program.SetUniform(screenSizeUniformLocation, [2]float32{float32(w), float32(h)})
+
+	inverse := camera.Inverse()
+	program.SetUniform(cameraTransformUniformLocation, [2][3]float32{
+		{float32(inverse[0][0]), float32(inverse[0][1]), float32(inverse[0][2])},
+		{float32(inverse[1][0]), float32(inverse[1][1]), float32(inverse[1][2])},
+	})
+
+	program.SetUniform(textureArrayUniformLocation, gfx.TextureUnit(0).WithSetTextureArray(r.textureArray))
 
 	r.renderer.Render()
 }
 
-func (r *Renderer) Delete() {
+func (r *Sheet) Delete() {
 	if r.renderer == nil {
 		return
 	}
@@ -51,7 +60,7 @@ func (r *Renderer) Delete() {
 	r.textureArray.Delete()
 }
 
-func (r *Renderer) initialize() {
+func (r *Sheet) initialize() {
 	if r.renderer != nil {
 		return
 	}
@@ -63,7 +72,7 @@ func (r *Renderer) initialize() {
 	r.pack()
 }
 
-func (r *Renderer) pack() {
+func (r *Sheet) pack() {
 	// Make list of free spaces
 	spaces := []struct {
 		x, y, w, h, z int

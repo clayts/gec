@@ -1,6 +1,7 @@
 #version 410
 
 uniform vec2 screenSize;
+uniform mat2x3 cameraTransform;
 
 in vec2 position;
 
@@ -18,7 +19,13 @@ void main() {
     m[2] = vec4(0.0,           		0.0,				1.0,	0.0);
     m[3] = vec4(dstTransform[0][2], dstTransform[1][2],	0.0,	1.0);
 
-    gl_Position = m*vec4(srcSize*position, dstDepth, 1.0);
+	mat4 c;
+    c[0] = vec4(cameraTransform[0][0], 	cameraTransform[1][0],	0.0,	0.0);
+    c[1] = vec4(cameraTransform[0][1], 	cameraTransform[1][1],	0.0,	0.0);
+    c[2] = vec4(0.0,           			0.0,					1.0,	0.0);
+    c[3] = vec4(cameraTransform[0][2], 	cameraTransform[1][2],	0.0,	1.0);
+
+    gl_Position = c*m*vec4(srcSize*position, dstDepth, 1.0);
     gl_Position.xy /= screenSize/2.0;
     gl_Position.xy -= vec2(1.0, 1.0);
     f_srcLocation = srcLocation + vec3(srcSize*((position*vec2(1.0,-1.0))+vec2(0.0,1.0)), 0.0);

@@ -16,15 +16,17 @@ var (
 	vertexShader, fragmentShader gfx.Shader
 	program                      gfx.Program
 
-	screenSizeUniformLocation, textureArrayUniformLocation gfx.UniformLocation
+	cameraTransformUniformLocation, screenSizeUniformLocation, textureArrayUniformLocation gfx.UniformLocation
 )
 
 func Initialize() {
 	vertexShader = gfx.NewVertexShader(vertexShaderSource)
 	fragmentShader = gfx.NewFragmentShader(fragmentShaderSource)
 	program = gfx.NewProgram(vertexShader, fragmentShader)
+	cameraTransformUniformLocation = program.UniformLocation("cameraTransform")
 	screenSizeUniformLocation = program.UniformLocation("screenSize")
 	textureArrayUniformLocation = program.UniformLocation("textureArray")
+
 }
 
 func Delete() {

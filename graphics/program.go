@@ -98,10 +98,13 @@ func (p Program) UniformLocation(uniformName string) UniformLocation {
 func (p *Program) SetUniform(u UniformLocation, data interface{}) {
 	gl.UseProgram(p.GL())
 	switch data := data.(type) {
+
 	case TextureUnit:
 		gl.Uniform1i(u.GL(), int32(data)) //NOT data.GL() for some reason (requires e.g. 0 for gl.TEXTURE0)
+
 	case float32:
 		gl.Uniform1f(u.GL(), data)
+
 	case [2]float32:
 		gl.Uniform2f(u.GL(), data[0], data[1])
 	case [3]float32:
@@ -109,23 +112,35 @@ func (p *Program) SetUniform(u UniformLocation, data interface{}) {
 	case [4]float32:
 		gl.Uniform4f(u.GL(), data[0], data[1], data[2], data[3])
 
-	case int32:
-		gl.Uniform1i(u.GL(), data)
-	case [2]int32:
-		gl.Uniform2i(u.GL(), data[0], data[1])
-	case [3]int32:
-		gl.Uniform3i(u.GL(), data[0], data[1], data[2])
-	case [4]int32:
-		gl.Uniform4i(u.GL(), data[0], data[1], data[2], data[3])
+	case [2][2]float32:
+		buf := [4]float32{data[0][0], data[0][1], data[1][0], data[1][1]}
+		gl.UniformMatrix2fv(u.GL(), 1, false, &buf[0])
+	case [2][3]float32:
+		buf := [6]float32{data[0][0], data[0][1], data[0][2], data[1][0], data[1][1], data[1][2]}
+		gl.UniformMatrix2x3fv(u.GL(), 1, false, &buf[0])
+	case [2][4]float32:
+		buf := [8]float32{data[0][0], data[0][1], data[0][2], data[0][3], data[1][0], data[1][1], data[1][2], data[1][3]}
+		gl.UniformMatrix2x4fv(u.GL(), 1, false, &buf[0])
 
-	case uint32:
-		gl.Uniform1ui(u.GL(), data)
-	case [2]uint32:
-		gl.Uniform2ui(u.GL(), data[0], data[1])
-	case [3]uint32:
-		gl.Uniform3ui(u.GL(), data[0], data[1], data[2])
-	case [4]uint32:
-		gl.Uniform4ui(u.GL(), data[0], data[1], data[2], data[3])
+	case [3][2]float32:
+		buf := [6]float32{data[0][0], data[0][1], data[1][0], data[1][1], data[2][0], data[2][1]}
+		gl.UniformMatrix3x2fv(u.GL(), 1, false, &buf[0])
+	case [3][3]float32:
+		buf := [9]float32{data[0][0], data[0][1], data[0][2], data[1][0], data[1][1], data[1][2], data[2][0], data[2][1], data[2][2]}
+		gl.UniformMatrix3fv(u.GL(), 1, false, &buf[0])
+	case [3][4]float32:
+		buf := [12]float32{data[0][0], data[0][1], data[0][2], data[0][3], data[1][0], data[1][1], data[1][2], data[1][3], data[2][0], data[2][1], data[2][2], data[2][3]}
+		gl.UniformMatrix3x4fv(u.GL(), 1, false, &buf[0])
+
+	case [4][2]float32:
+		buf := [8]float32{data[0][0], data[0][1], data[1][0], data[1][1], data[2][0], data[2][1], data[3][0], data[3][1]}
+		gl.UniformMatrix4x2fv(u.GL(), 1, false, &buf[0])
+	case [4][3]float32:
+		buf := [12]float32{data[0][0], data[0][1], data[0][2], data[1][0], data[1][1], data[1][2], data[2][0], data[2][1], data[2][2], data[3][0], data[3][1], data[3][2]}
+		gl.UniformMatrix4x3fv(u.GL(), 1, false, &buf[0])
+	case [4][4]float32:
+		buf := [16]float32{data[0][0], data[0][1], data[0][2], data[0][3], data[1][0], data[1][1], data[1][2], data[1][3], data[2][0], data[2][1], data[2][2], data[2][3], data[3][0], data[3][1], data[3][2], data[3][3]}
+		gl.UniformMatrix4fv(u.GL(), 1, false, &buf[0])
 
 	default:
 		panic("unsupported data type")

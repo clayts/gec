@@ -7,11 +7,11 @@ import (
 )
 
 type Sprite struct {
-	renderer *Renderer
+	renderer *Sheet
 	index    int
 }
 
-func (r *Renderer) MakeSprite(img image.Image) Sprite {
+func (r *Sheet) MakeSprite(img image.Image) Sprite {
 	r.sources = append(r.sources, struct {
 		location [3]float32
 		size     [2]float32

@@ -12,14 +12,14 @@ type Render struct {
 	Components space.Space[func(callShape geometry.Shape)]
 	Camera     geometry.Transform
 	OpaqueRenderer,
-	TransparentRenderer *sprites.Renderer
+	TransparentRenderer *sprites.Sheet
 }
 
 func NewRender() *Render {
 	r := &Render{}
 
-	r.OpaqueRenderer = sprites.NewRenderer()
-	r.TransparentRenderer = sprites.NewRenderer()
+	r.OpaqueRenderer = sprites.NewSheet()
+	r.TransparentRenderer = sprites.NewSheet()
 
 	r.Camera = geometry.T()
 
@@ -42,11 +42,11 @@ func (r *Render) Render() {
 	gl.DepthMask(true)
 	gl.Disable(gl.BLEND)
 	graphics.Clear(true, true, false)
-	r.OpaqueRenderer.Render()
+	r.OpaqueRenderer.Render(r.Camera)
 	gl.DepthMask(false)
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
-	r.TransparentRenderer.Render()
+	r.TransparentRenderer.Render(r.Camera)
 	graphics.Render()
 }
 
