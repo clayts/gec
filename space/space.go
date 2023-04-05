@@ -11,33 +11,33 @@ const (
 	maxCached = 1
 )
 
-type Space[T any] struct {
-	local     *subSpace[T]
-	universal *subSpace[T]
+type Space[A any] struct {
+	local     *subSpace[A]
+	universal *subSpace[A]
 }
 
-func New[T any]() *Space[T] { return &Space[T]{} }
+func New[A any]() *Space[A] { return &Space[A]{} }
 
 // Runs f(*Leaf) on every *Leaf in the Tree which intersects with s.
-func (spc *Space[T]) AllIntersecting(s geo.Shape, f func(z *Zone[T]) bool) bool {
+func (spc *Space[A]) AllIntersecting(s geo.Shape, f func(z *Zone[A]) bool) bool {
 	return spc.universal.all(f) && spc.local.allIntersecting(s, f)
 }
 
 // Runs f(*Leaf) on every *Leaf in the Tree.
-func (spc *Space[T]) All(f func(z *Zone[T]) bool) bool {
+func (spc *Space[A]) All(f func(z *Zone[A]) bool) bool {
 	return spc.universal.all(f) && spc.local.all(f)
 }
 
-func (spc *Space[T]) add(z *Zone[T]) {
+func (spc *Space[A]) add(z *Zone[A]) {
 	if z.shape == geo.EVERYWHERE {
 		if spc.universal == nil {
-			spc.universal = &subSpace[T]{}
+			spc.universal = &subSpace[A]{}
 		}
 		spc.universal.size++
 		spc.universal.store(z)
 	} else {
 		if spc.local == nil {
-			spc.local = &subSpace[T]{radius: geo.V(math.SmallestNonzeroFloat64, math.SmallestNonzeroFloat64)}
+			spc.local = &subSpace[A]{radius: geo.V(math.SmallestNonzeroFloat64, math.SmallestNonzeroFloat64)}
 		}
 		for !spc.local.bounds().Contains(z.shape.Bounds()) {
 			spc.local = spc.local.demandParent()
@@ -46,7 +46,7 @@ func (spc *Space[T]) add(z *Zone[T]) {
 	}
 }
 
-func (spc *Space[T]) remove(z *Zone[T]) {
+func (spc *Space[A]) remove(z *Zone[A]) {
 	z.subSpace.remove(z)
 
 	if spc.local != nil && spc.local.size == 0 {
@@ -57,7 +57,7 @@ func (spc *Space[T]) remove(z *Zone[T]) {
 	}
 }
 
-func (spc *Space[T]) Size() int {
+func (spc *Space[A]) Size() int {
 	size := 0
 	if spc.local != nil {
 		size += spc.local.size
@@ -68,9 +68,9 @@ func (spc *Space[T]) Size() int {
 	return size
 }
 
-func (spc *Space[T]) PrintStructure() {
-	var print func(b *subSpace[T], prefix string)
-	print = func(b *subSpace[T], prefix string) {
+func (spc *Space[A]) PrintStructure() {
+	var print func(b *subSpace[A], prefix string)
+	print = func(b *subSpace[A], prefix string) {
 		if b != nil {
 			if b.upper {
 				prefix += "1"

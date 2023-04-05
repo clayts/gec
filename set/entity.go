@@ -1,21 +1,21 @@
 package set
 
-func (s *Set[T]) New() *Entity[T] {
-	e := &Entity[T]{set: s, index: -1}
+func (s *Set[A]) New() *Entity[A] {
+	e := &Entity[A]{set: s, index: -1}
 	return e
 }
 
-func (e *Entity[T]) Enable() *Entity[T] {
+func (e *Entity[A]) Enable() *Entity[A] {
 	e.set.add(e)
 	return e
 }
 
-func (e *Entity[T]) Disable() *Entity[T] {
+func (e *Entity[A]) Disable() *Entity[A] {
 	e.set.remove(e)
 	return e
 }
 
-func (e *Entity[T]) SetContents(c T) *Entity[T] {
+func (e *Entity[A]) SetContents(c A) *Entity[A] {
 	e.Contents = c
 	return e
 }

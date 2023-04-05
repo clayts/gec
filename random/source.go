@@ -8,30 +8,33 @@ import (
 
 type Source struct {
 	*rand.Rand
-	noise [4]opensimplex.Noise
+	Noise Noise
 }
 
 func NewSource(seed int64) *Source {
 	s := &Source{}
 	s.Rand = rand.New(rand.NewSource(seed))
-	for i := range s.noise {
-		s.noise[i] = opensimplex.NewNormalized(s.Int63())
+
+	// This hack is required because implementations of openSimplex noise in different dimensions produce a different distribution of outputs
+	noiseA := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
+	noiseB := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
+	noiseC := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
+	noiseD := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
+
+	s.Noise = func(coordinates ...float64) float64 {
+		switch len(coordinates) {
+		case 1:
+			return noiseA(coordinates[0], 0, 0, 0)
+		case 2:
+			return noiseB(coordinates[0], coordinates[1], 0, 0)
+		case 3:
+			return noiseC(coordinates[0], coordinates[1], coordinates[2], 0)
+		case 4:
+			return noiseD(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
+		default:
+			panic("noise coordinates must be 1, 2, 3 or 4 dimensional")
+		}
 	}
+
 	return s
-}
-
-func (s *Source) Noise1D(x float64) float64 {
-	return s.noise[0].Eval4(x, 0, 0, 0)
-}
-
-func (s *Source) Noise2D(x, y float64) float64 {
-	return s.noise[1].Eval4(x, y, 0, 0)
-}
-
-func (s *Source) Noise3D(x, y, z float64) float64 {
-	return s.noise[2].Eval4(x, y, z, 0)
-}
-
-func (s *Source) Noise4D(x, y, z, w float64) float64 {
-	return s.noise[3].Eval4(x, y, z, w)
 }

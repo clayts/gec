@@ -1,20 +1,20 @@
 package set
 
-type Entity[T any] struct {
-	set      *Set[T]
+type Entity[A any] struct {
+	set      *Set[A]
 	index    int
-	Contents T
+	Contents A
 }
 
-type Set[T any] struct {
-	entities []*Entity[T]
+type Set[A any] struct {
+	entities []*Entity[A]
 }
 
-func New[T any]() *Set[T] {
-	s := &Set[T]{}
+func New[A any]() *Set[A] {
+	s := &Set[A]{}
 	return s
 }
-func (s *Set[T]) All(f func(e *Entity[T]) bool) bool {
+func (s *Set[A]) All(f func(e *Entity[A]) bool) bool {
 	for i := len(s.entities) - 1; i >= 0; i-- {
 		if !f(s.entities[i]) {
 			return false
@@ -23,16 +23,16 @@ func (s *Set[T]) All(f func(e *Entity[T]) bool) bool {
 	return true
 }
 
-func (s *Set[T]) Size() int { return len(s.entities) }
+func (s *Set[A]) Size() int { return len(s.entities) }
 
-func (s *Set[T]) add(e *Entity[T]) {
+func (s *Set[A]) add(e *Entity[A]) {
 	if e.index == -1 {
 		e.index = len(s.entities)
 		s.entities = append(s.entities, e)
 	}
 }
 
-func (s *Set[T]) remove(e *Entity[T]) {
+func (s *Set[A]) remove(e *Entity[A]) {
 	if e.index != -1 {
 		finalIndex := len(s.entities) - 1
 		if finalIndex != 0 {

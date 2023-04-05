@@ -2,33 +2,33 @@ package space
 
 import geo "github.com/clayts/gec/geometry"
 
-type Zone[T any] struct {
+type Zone[A any] struct {
 	shape    geo.Shape
-	space    *Space[T]
-	subSpace *subSpace[T]
+	space    *Space[A]
+	subSpace *subSpace[A]
 	index    int
-	Contents T
+	Contents A
 }
 
-func (spc *Space[T]) New(s geo.Shape) *Zone[T] {
-	return &Zone[T]{space: spc, shape: s}
+func (spc *Space[A]) New(s geo.Shape) *Zone[A] {
+	return &Zone[A]{space: spc, shape: s}
 }
 
-func (z *Zone[T]) Enable() *Zone[T] {
+func (z *Zone[A]) Enable() *Zone[A] {
 	if z.subSpace == nil {
 		z.space.add(z)
 	}
 	return z
 }
 
-func (z *Zone[T]) Disable() *Zone[T] {
+func (z *Zone[A]) Disable() *Zone[A] {
 	if z.subSpace != nil {
 		z.space.remove(z)
 	}
 	return z
 }
 
-func (z *Zone[T]) SetShape(s geo.Shape) *Zone[T] {
+func (z *Zone[A]) SetShape(s geo.Shape) *Zone[A] {
 	z.shape = s
 	if z.subSpace != nil {
 		z.space.remove(z)
@@ -37,9 +37,9 @@ func (z *Zone[T]) SetShape(s geo.Shape) *Zone[T] {
 	return z
 }
 
-func (z *Zone[T]) SetContents(c T) *Zone[T] {
+func (z *Zone[A]) SetContents(c A) *Zone[A] {
 	z.Contents = c
 	return z
 }
 
-func (z *Zone[T]) Shape() geo.Shape { return z.shape }
+func (z *Zone[A]) Shape() geo.Shape { return z.shape }

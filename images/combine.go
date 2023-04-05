@@ -25,7 +25,7 @@ func CombineX(a, b image.Image) image.Image {
 	bounds.Max.X += b.Bounds().Dx()
 
 	at := func(x, y int) color.Color {
-		if x > a.Bounds().Max.X {
+		if x >= a.Bounds().Max.X {
 			x -= a.Bounds().Max.X
 			return b.At(x, y)
 		}
@@ -56,7 +56,7 @@ func CombineY(a, b image.Image) image.Image {
 	bounds.Max.Y += b.Bounds().Dy()
 
 	at := func(x, y int) color.Color {
-		if y > a.Bounds().Max.Y {
+		if y >= a.Bounds().Max.Y {
 			y -= a.Bounds().Max.Y
 			return b.At(x, y)
 		}
