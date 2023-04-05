@@ -94,6 +94,8 @@ func main() {
 	for !graphics.Window.ShouldClose() {
 		u.systems.update.Step()
 		u.systems.render.Render()
+		graphics.Render()
+		graphics.Clear(true, false, false)
 	}
 
 }

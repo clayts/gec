@@ -11,21 +11,20 @@ import (
 
 func Bloom(img image.Image, radius int, glow float64) image.Image {
 
-	imgSize := img.Bounds().Size()
-	newSize := image.Rect(0, 0, imgSize.X+((radius+2)*2), imgSize.Y+((radius+2)*2))
+	newRect := image.Rect(img.Bounds().Min.X-radius, img.Bounds().Min.Y-radius, img.Bounds().Max.X+radius, img.Bounds().Max.Y+radius)
 
-	extended := image.NewRGBA(newSize)
-	for x := 0; x < imgSize.X; x++ {
-		for y := 0; y < imgSize.Y; y++ {
-			extended.Set(radius+x+2, radius+y+2, img.At(x, y))
+	extended := image.NewRGBA(newRect)
+	for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
+		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+			extended.Set(x, y, img.At(x, y))
 		}
 	}
 
 	newImg := effect.Dilate(extended, 2)
 
 	newImg = blur.Gaussian(newImg, float64(radius))
-	for x := 0; x < newSize.Max.X; x++ {
-		for y := 0; y < newSize.Max.X; y++ {
+	for x := newRect.Min.X; x < newRect.Max.X; x++ {
+		for y := newRect.Min.Y; y < newRect.Max.Y; y++ {
 			c := newImg.RGBAAt(x, y)
 			c2 := color.NRGBA{c.R, c.G, c.B, uint8(255.0 * glow)}
 			newImg.Set(x, y, c2)
@@ -33,6 +32,8 @@ func Bloom(img image.Image, radius int, glow float64) image.Image {
 	}
 
 	newImg = blend.Add(newImg, extended)
+
+	newImg.Rect = extended.Rect
 
 	return newImg
 }

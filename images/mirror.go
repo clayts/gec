@@ -6,41 +6,35 @@ import (
 )
 
 func MirrorX(i image.Image) image.Image {
-	return mirroredXImage{i}
+	model := i.ColorModel()
+
+	bounds := i.Bounds()
+	bounds.Max.X += bounds.Dx()
+
+	at := func(x, y int) color.Color {
+		max := i.Bounds().Max.X
+		if x >= max {
+			x = (max - (x - max)) - 1
+		}
+		return i.At(x, y)
+	}
+
+	return NewProcedural(at, bounds, model)
 }
 
 func MirrorY(i image.Image) image.Image {
-	return mirroredYImage{i}
-}
+	model := i.ColorModel()
 
-type mirroredXImage struct{ image.Image }
+	bounds := i.Bounds()
+	bounds.Max.Y += bounds.Dy()
 
-func (i mirroredXImage) Bounds() image.Rectangle {
-	b := i.Image.Bounds()
-	b.Max.X += b.Dx()
-	return b
-}
-
-func (i mirroredXImage) At(x, y int) color.Color {
-	max := i.Image.Bounds().Max.X
-	if x >= max {
-		x = (max - (x - max)) - 1
+	at := func(x, y int) color.Color {
+		max := i.Bounds().Max.Y
+		if y >= max {
+			y = (max - (y - max)) - 1
+		}
+		return i.At(x, y)
 	}
-	return i.Image.At(x, y)
-}
 
-type mirroredYImage struct{ image.Image }
-
-func (i mirroredYImage) Bounds() image.Rectangle {
-	b := i.Image.Bounds()
-	b.Max.Y += b.Dy()
-	return b
-}
-
-func (i mirroredYImage) At(x, y int) color.Color {
-	max := i.Image.Bounds().Max.Y
-	if y >= max {
-		y = (max - (y - max)) - 1
-	}
-	return i.Image.At(x, y)
+	return NewProcedural(at, bounds, model)
 }

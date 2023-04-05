@@ -1,7 +1,6 @@
 package renderer
 
 import (
-	"fmt"
 	"strconv"
 
 	gfx "github.com/clayts/gec/graphics"
@@ -168,7 +167,6 @@ func (r *InstanceRenderer) DrawInstance(instance ...float32) {
 
 func (r *InstanceRenderer) Render() {
 	if vc, ic := r.vertices.count(), r.instances.count(); vc > 0 && ic > 0 {
-		fmt.Println("instanced render", vc, ic)
 		r.vertices.sync()
 		r.instances.sync()
 		r.program.DrawInstanced(r.vao, r.mode, 0, vc, ic)

@@ -5,7 +5,7 @@ import (
 	"image/draw"
 	"sort"
 
-	"github.com/clayts/gec/geometry"
+	geo "github.com/clayts/gec/geometry"
 	gfx "github.com/clayts/gec/graphics"
 	ren "github.com/clayts/gec/renderer"
 )
@@ -16,24 +16,25 @@ type Sheet struct {
 	sources      []struct {
 		location [3]float32
 		size     [2]float32
+		offset   geo.Vector
 		image    image.Image
 	}
 }
 
 func NewSheet() *Sheet {
-	r := &Sheet{}
-	return r
+	sh := &Sheet{}
+	return sh
 }
 
-func (r *Sheet) Clear() {
-	if r.renderer == nil {
+func (sh *Sheet) Clear() {
+	if sh.renderer == nil {
 		return
 	}
-	r.renderer.ClearInstances()
+	sh.renderer.ClearInstances()
 }
 
-func (r *Sheet) Render(camera geometry.Transform) {
-	if r.renderer == nil {
+func (sh *Sheet) Render(camera geo.Transform) {
+	if sh.renderer == nil {
 		return
 	}
 
@@ -46,33 +47,33 @@ func (r *Sheet) Render(camera geometry.Transform) {
 		{float32(inverse[1][0]), float32(inverse[1][1]), float32(inverse[1][2])},
 	})
 
-	program.SetUniform(textureArrayUniformLocation, gfx.TextureUnit(0).WithSetTextureArray(r.textureArray))
+	program.SetUniform(textureArrayUniformLocation, gfx.TextureUnit(0).WithSetTextureArray(sh.textureArray))
 
-	r.renderer.Render()
+	sh.renderer.Render()
 }
 
-func (r *Sheet) Delete() {
-	if r.renderer == nil {
+func (sh *Sheet) Delete() {
+	if sh.renderer == nil {
 		return
 	}
-	r.sources = nil
-	r.renderer.Delete()
-	r.textureArray.Delete()
+	sh.sources = nil
+	sh.renderer.Delete()
+	sh.textureArray.Delete()
 }
 
-func (r *Sheet) initialize() {
-	if r.renderer != nil {
+func (sh *Sheet) initialize() {
+	if sh.renderer != nil {
 		return
 	}
-	r.renderer = ren.NewInstanceRenderer(program, gfx.TRIANGLE_STRIP, []string{"position"}, "dstTransform", "dstDepth", "srcLocation", "srcSize")
-	r.renderer.Draw(0, 0)
-	r.renderer.Draw(0, 1)
-	r.renderer.Draw(1, 0)
-	r.renderer.Draw(1, 1)
-	r.pack()
+	sh.renderer = ren.NewInstanceRenderer(program, gfx.TRIANGLE_STRIP, []string{"position"}, "dstTransform", "dstDepth", "srcLocation", "srcSize")
+	sh.renderer.Draw(0, 0)
+	sh.renderer.Draw(0, 1)
+	sh.renderer.Draw(1, 0)
+	sh.renderer.Draw(1, 1)
+	sh.pack()
 }
 
-func (r *Sheet) pack() {
+func (sh *Sheet) pack() {
 	// Make list of free spaces
 	spaces := []struct {
 		x, y, w, h, z int
@@ -84,14 +85,14 @@ func (r *Sheet) pack() {
 	}
 
 	// Make list of locations
-	locations := make([][3]int, len(r.sources))
+	locations := make([][3]int, len(sh.sources))
 
 	// Sort data
 	boxes := make([]struct {
 		index int
 		w, h  int
-	}, len(r.sources))
-	for i, src := range r.sources {
+	}, len(sh.sources))
+	for i, src := range sh.sources {
 		v := boxes[i]
 		v.w = src.image.Bounds().Dx()
 		v.h = src.image.Bounds().Dy()
@@ -156,6 +157,7 @@ func (r *Sheet) pack() {
 					// |_______________|
 					space.y += box.h
 					space.h -= box.h
+					spaces[i] = space
 				} else {
 					// otherwise the box splits the space into two spaces
 					// |-------|-----------|
@@ -166,6 +168,7 @@ func (r *Sheet) pack() {
 					spaces = append(spaces, struct{ x, y, w, h, z int }{space.x + box.w, space.y, space.w - box.w, box.h, space.z})
 					space.y += box.h
 					space.h -= box.h
+					spaces[i] = space
 				}
 				break
 			}
@@ -179,16 +182,24 @@ func (r *Sheet) pack() {
 	}
 
 	// Copy data to RGBAs and update sources
-	for i, src := range r.sources {
+	for i, src := range sh.sources {
 		l := locations[i]
-		r.sources[i].location = [3]float32{float32(l[0]), float32(l[1]), float32(l[2])}
+		sh.sources[i].location = [3]float32{float32(l[0]), float32(l[1]), float32(l[2])}
 		rgba := rgbas[l[2]]
-		draw.Draw(rgba, image.Rect(l[0], l[1], l[0]+src.image.Bounds().Dx(), l[1]+src.image.Bounds().Dy()), src.image, image.Point{}, draw.Src)
+		// Draw(dst Image, r image.Rectangle, src image.Image, sp image.Point, op Op)
+		// Draw aligns r.Min in dst with sp in src and then replaces the rectangle r in dst
+		draw.Draw(
+			rgba, // dst
+			image.Rect(l[0], l[1], l[0]+src.image.Bounds().Dx(), l[1]+src.image.Bounds().Dy()), // r
+			src.image,              // src
+			src.image.Bounds().Min, // sp
+			draw.Src,               // op
+		)
 	}
 
 	// // DEBUG ONLY
-	// for i, target := range rgbas {
-	// 	f, err := os.Create(strconv.Itoa(i) + ".jpg")
+	// for _, target := range rgbas {
+	// 	f, err := os.Create(strconv.Itoa(rand.Int()) + ".jpg")
 	// 	if err != nil {
 	// 		panic(err)
 	// 	}
@@ -200,5 +211,5 @@ func (r *Sheet) pack() {
 	// }
 
 	// Create TextureArray
-	r.textureArray = gfx.NewTextureArray(rgbas, false, false, false, false)
+	sh.textureArray = gfx.NewTextureArray(rgbas, false, false, false, false)
 }
