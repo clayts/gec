@@ -7,14 +7,10 @@ import (
 	"github.com/clayts/gec/floats"
 )
 
-type Selector[A any] func(index float64) A
-
-type Phase[A any] struct {
+type Sequence[A any] []struct {
 	Item   A
 	Length float64
 }
-
-type Sequence[A any] []Phase[A]
 
 func MakeSequence[A any](slice ...A) Sequence[A] {
 	s := make(Sequence[A], len(slice))
@@ -25,44 +21,47 @@ func MakeSequence[A any](slice ...A) Sequence[A] {
 	return s
 }
 
-func (s Sequence[A]) compile() ([]A, []float64, float64) {
+func (s Sequence[A]) analyze() ([]A, []float64, float64, bool) {
+
+	homogenous := true
+	firstLength := s[0].Length
+
 	items := make([]A, len(s))
+	items[0] = s[0].Item
+
 	cumulative := make([]float64, len(s))
-	total := 0.0
-	for i, phase := range s {
+	cumulative[0] = firstLength
+
+	total := firstLength
+	for i := 1; i < len(s); i++ {
+		phase := s[i]
+		if phase.Length != firstLength {
+			homogenous = false
+		}
 		total += phase.Length
 		items[i] = phase.Item
 		cumulative[i] = total
 	}
-	return items, cumulative, total
+	return items, cumulative, total, homogenous
 }
 
-func (s Sequence[A]) Length() float64 {
-	total := 0.0
-	for _, phase := range s {
-		total += phase.Length
+func (s Sequence[A]) Selector() func(index float64) A {
+	items, cumulative, total, homogenous := s.analyze()
+	if homogenous {
+		return func(index float64) A {
+			if index < 0 || index > 1 {
+				panic(fmt.Sprint("index out of bounds", index))
+			}
+			if index == 1 {
+				return items[len(items)-1]
+			}
+			return items[int(floats.Remap(index, 0, 1, 0, float64(len(items))))]
+		}
 	}
-	return total
-}
-
-func (s Sequence[A]) Selector(min, max float64) Selector[A] {
-	items, cumulative, total := s.compile()
 	return func(index float64) A {
-		if index < min || index > max {
-			panic(fmt.Sprint("index out of bounds", index, "(min:", min, "max:", max, ")"))
+		if index < 0 || index > 1 {
+			panic(fmt.Sprint("index out of bounds", index))
 		}
-		return items[sort.SearchFloat64s(cumulative, floats.Remap(index, min, max, 0, total))]
-	}
-}
-
-func MakeSelector[A any](min, max float64, slice ...A) Selector[A] {
-	return func(index float64) A {
-		if index < min || index > max {
-			panic(fmt.Sprint("index out of bounds", index, "(min:", min, "max:", max, ")"))
-		}
-		if index == max {
-			return slice[len(slice)-1]
-		}
-		return slice[int(floats.Remap(index, min, max, 0, float64(len(slice))))]
+		return items[sort.SearchFloat64s(cumulative, floats.Remap(index, 0, 1, 0, total))]
 	}
 }

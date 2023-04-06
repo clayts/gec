@@ -1,11 +1,5 @@
 package set
 
-type Entity[A any] struct {
-	set      *Set[A]
-	index    int
-	Contents A
-}
-
 type Set[A any] struct {
 	entities []*Entity[A]
 }
