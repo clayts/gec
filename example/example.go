@@ -35,21 +35,22 @@ func newUniverse() *universe {
 }
 
 func (u *universe) createThing(sprite sprites.Sprite, position geometry.Vector, linearVelocity geometry.Vector) {
-	instance := sprite.Instance(geometry.Translation(position), rand.Float32())
+	transform := geometry.Translation(position)
+	depth := rand.Float32()
 
 	renderZone := u.systems.render.Components.
-		New(instance.Shape()).
+		New(transform.Rectangle(sprite.Bounds())).
 		SetContents(func(callShape geometry.Shape) {
-			instance.Draw()
+			sprite.Draw(transform, depth)
 		}).
 		Enable()
 
 	u.systems.update.Components.
 		New().
 		SetContents(func() {
-			instance.Transform = geometry.Translation(linearVelocity.TimesScalar(u.systems.update.StepDuration.Seconds())).Times(instance.Transform)
-			renderZone.SetShape(instance.Shape())
-			if !geometry.Contains(u.systems.render.Camera.Rectangle(graphics.Bounds()), instance.Shape()) {
+			transform = geometry.Translation(linearVelocity.TimesScalar(u.systems.update.StepDuration.Seconds())).Times(transform)
+			renderZone.SetShape(transform.Rectangle(sprite.Bounds()))
+			if !geometry.Contains(u.systems.render.Camera.Rectangle(graphics.Bounds()), renderZone.Shape()) {
 				linearVelocity = geometry.V(0, 0).Minus(linearVelocity)
 			}
 		}).
@@ -73,8 +74,8 @@ func main() {
 	sprite := u.systems.render.OpaqueRenderer.MakeSprite(images.LoadRGBA("test.png"))
 	for i := 0; i < 100; i++ {
 		position := geometry.V(
-			rand.Float64()*(graphics.Bounds().Size().X-sprite.Size().X),
-			rand.Float64()*(graphics.Bounds().Size().Y-sprite.Size().Y),
+			rand.Float64()*(graphics.Bounds().Size().X-sprite.Bounds().Size().X),
+			rand.Float64()*(graphics.Bounds().Size().Y-sprite.Bounds().Size().Y),
 		)
 		linearVelocity := geometry.V(rand.Float64()*100, rand.Float64()*100)
 		u.createThing(sprite, position, linearVelocity)
@@ -83,8 +84,8 @@ func main() {
 	sprite2 := u.systems.render.TransparentRenderer.MakeSprite(images.LoadRGBA("test2.png"))
 	for i := 0; i < 100; i++ {
 		position := geometry.V(
-			rand.Float64()*(graphics.Bounds().Size().X-sprite2.Size().X),
-			rand.Float64()*(graphics.Bounds().Size().Y-sprite2.Size().Y),
+			rand.Float64()*(graphics.Bounds().Size().X-sprite2.Bounds().Size().X),
+			rand.Float64()*(graphics.Bounds().Size().Y-sprite2.Bounds().Size().Y),
 		)
 		linearVelocity := geometry.V(rand.Float64(), rand.Float64()).MinusScalar(0.5).TimesScalar(100)
 		u.createThing(sprite2, position, linearVelocity)

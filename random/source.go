@@ -8,14 +8,14 @@ import (
 
 type Source struct {
 	*rand.Rand
-	Noise Noise
+	Noise func(coordinates ...float64) float64
 }
 
 func NewSource(seed int64) *Source {
 	s := &Source{}
 	s.Rand = rand.New(rand.NewSource(seed))
 
-	// This hack is required because implementations of openSimplex noise in different dimensions produce a different distribution of outputs
+	// This hack is required because implementations of openSimplex noise in different dimensions produce a different distribution of outputs.
 	noiseA := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
 	noiseB := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
 	noiseC := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
