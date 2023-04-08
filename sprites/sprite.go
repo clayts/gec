@@ -7,24 +7,23 @@ import (
 )
 
 type Sprite struct {
-	sheet *Sheet
-	index int
+	sheet      *Sheet
+	imageIndex int
+	min        [2]float32
+	size       [2]float32
 }
 
 func (sh *Sheet) MakeSprite(img image.Image) Sprite {
-	sh.sources = append(sh.sources, struct {
+	sh.images = append(sh.images, struct {
 		location [3]float32
-		size     [2]float32
-		offset   geo.Vector
 		image    image.Image
 	}{
-		image:  img,
-		size:   [2]float32{float32(img.Bounds().Dx()), float32(img.Bounds().Dy())},
-		offset: geo.V(float64(img.Bounds().Min.X), float64(img.Bounds().Min.Y)),
+		image: img,
 	})
 	return Sprite{
-		sheet: sh,
-		index: len(sh.sources) - 1,
+		sheet:      sh,
+		imageIndex: len(sh.images) - 1,
+		size:       [2]float32{float32(img.Bounds().Dx()), float32(img.Bounds().Dy())},
 	}
 }
 
@@ -37,18 +36,46 @@ func (sh *Sheet) MakeSprites(imgs ...image.Image) []Sprite {
 }
 
 func (s Sprite) Bounds() geo.Rectangle {
-	src := s.sheet.sources[s.index]
-	return geo.R(src.offset, geo.V(float64(src.size[0]), float64(src.size[1])))
+	return geo.R(geo.V(0, 0), geo.V(float64(s.size[0]), float64(s.size[1])))
 }
 
 func (s Sprite) Draw(transform geo.Transform, depth float32) {
 	s.sheet.initialize()
-	src := s.sheet.sources[s.index]
-	dst := transform.Times(geo.Translation(src.offset))
+	src := s.sheet.images[s.imageIndex]
 	s.sheet.renderer.DrawInstance(
-		float32(dst[0][0]), float32(dst[0][1]), float32(dst[0][2]), float32(dst[1][0]), float32(dst[1][1]), float32(dst[1][2]),
+		float32(transform[0][0]), float32(transform[0][1]), float32(transform[0][2]), float32(transform[1][0]), float32(transform[1][1]), float32(transform[1][2]),
 		depth,
-		src.location[0], src.location[1], src.location[2],
-		src.size[0], src.size[1],
+		src.location[0]+s.min[0], src.location[1]+s.min[1], src.location[2],
+		s.size[0], s.size[1],
 	)
 }
+
+func (s Sprite) SubSprite(region geo.Rectangle) Sprite {
+	if !s.Bounds().Contains(region) {
+		panic("region out of bounds")
+	}
+
+	sub := s
+
+	sub.min[0] += float32(region.Min.X)
+	sub.min[1] += float32(region.Min.Y)
+
+	size := region.Size()
+	sub.size[0] = float32(size.X)
+	sub.size[1] = float32(size.Y)
+
+	return sub
+}
+
+// func (s Sprite) DrawRegion(region geo.Rectangle, transform geo.Transform, depth float32) {
+// 	s.sheet.initialize()
+// 	src := s.sheet.sources[s.index]
+// 	dst := transform.Times(geo.Translation(src.offset))
+// 	size := region.Size()
+// 	s.sheet.renderer.DrawInstance(
+// 		float32(dst[0][0]), float32(dst[0][1]), float32(dst[0][2]), float32(dst[1][0]), float32(dst[1][1]), float32(dst[1][2]),
+// 		depth,
+// 		src.location[0]+float32(region.Min.X-src.offset.X), src.location[1]+float32(region.Min.Y-src.offset.Y), src.location[2],
+// 		float32(size.X), float32(size.Y),
+// 	)
+// }

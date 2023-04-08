@@ -31,10 +31,10 @@ func (r Rectangle) Vertex(i int) Vector {
 func (r Rectangle) Bounds() Rectangle { return r }
 
 func (r Rectangle) Contains(r2 Rectangle) bool {
-	return r.Min.X < r2.Min.X &&
-		r.Max.X > r2.Max.X &&
-		r.Min.Y < r2.Min.Y &&
-		r.Max.Y > r2.Max.Y
+	return r.Min.X <= r2.Min.X &&
+		r.Max.X >= r2.Max.X &&
+		r.Min.Y <= r2.Min.Y &&
+		r.Max.Y >= r2.Max.Y
 }
 
 func (r Rectangle) Intersects(r2 Rectangle) bool {

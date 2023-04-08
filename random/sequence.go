@@ -21,6 +21,15 @@ func MakeSequence[A any](slice ...A) Sequence[A] {
 	return s
 }
 
+func GenerateSequence[A any](n int, generate func(i int) A) Sequence[A] {
+	s := make(Sequence[A], n)
+	for i := range s {
+		s[i].Item = generate(i)
+		s[i].Length = 1
+	}
+	return s
+}
+
 func (s Sequence[A]) analyze() ([]A, []float64, float64, bool) {
 
 	homogenous := true

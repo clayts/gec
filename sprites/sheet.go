@@ -7,16 +7,15 @@ import (
 
 	geo "github.com/clayts/gec/geometry"
 	gfx "github.com/clayts/gec/graphics"
+	"github.com/clayts/gec/images"
 	ren "github.com/clayts/gec/renderer"
 )
 
 type Sheet struct {
 	renderer     *ren.InstanceRenderer
 	textureArray gfx.TextureArray
-	sources      []struct {
+	images       []struct {
 		location [3]float32
-		size     [2]float32
-		offset   geo.Vector
 		image    image.Image
 	}
 }
@@ -56,7 +55,7 @@ func (sh *Sheet) Delete() {
 	if sh.renderer == nil {
 		return
 	}
-	sh.sources = nil
+	sh.images = nil
 	sh.renderer.Delete()
 	sh.textureArray.Delete()
 }
@@ -85,14 +84,14 @@ func (sh *Sheet) pack() {
 	}
 
 	// Make list of locations
-	locations := make([][3]int, len(sh.sources))
+	locations := make([][3]int, len(sh.images))
 
 	// Sort data
 	boxes := make([]struct {
 		index int
 		w, h  int
-	}, len(sh.sources))
-	for i, src := range sh.sources {
+	}, len(sh.images))
+	for i, src := range sh.images {
 		v := boxes[i]
 		v.w = src.image.Bounds().Dx()
 		v.h = src.image.Bounds().Dy()
@@ -182,18 +181,18 @@ func (sh *Sheet) pack() {
 	}
 
 	// Copy data to RGBAs and update sources
-	for i, src := range sh.sources {
+	for i, src := range sh.images {
 		l := locations[i]
-		sh.sources[i].location = [3]float32{float32(l[0]), float32(l[1]), float32(l[2])}
+		sh.images[i].location = [3]float32{float32(l[0]), float32(l[1]), float32(l[2])}
 		rgba := rgbas[l[2]]
 		// Draw(dst Image, r image.Rectangle, src image.Image, sp image.Point, op Op)
 		// Draw aligns r.Min in dst with sp in src and then replaces the rectangle r in dst
 		draw.Draw(
 			rgba, // dst
 			image.Rect(l[0], l[1], l[0]+src.image.Bounds().Dx(), l[1]+src.image.Bounds().Dy()), // r
-			src.image,              // src
-			src.image.Bounds().Min, // sp
-			draw.Src,               // op
+			images.FlipY(src.image), // src
+			src.image.Bounds().Min,  // sp
+			draw.Src,                // op
 		)
 	}
 

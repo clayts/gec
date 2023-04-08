@@ -28,5 +28,6 @@ void main() {
     gl_Position = c*m*vec4(srcSize*position, dstDepth, 1.0);
     gl_Position.xy /= screenSize/2.0;
     gl_Position.xy -= vec2(1.0, 1.0);
-    f_srcLocation = srcLocation + vec3(srcSize*((position*vec2(1.0,-1.0))+vec2(0.0,1.0)), 0.0);
+    f_srcLocation = srcLocation;
+    f_srcLocation.xy += srcSize*position;
 }

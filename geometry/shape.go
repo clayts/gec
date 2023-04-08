@@ -64,13 +64,25 @@ func AllAnticlockwise(g Segment, s Shape) bool {
 	return AllVertices(s, func(i int, v Vector) bool { return v.Minus(g[0]).Cross(line) < 0 })
 }
 
+// AllNotAnticlockwise returns true if none of s is anticlockwise of g[1], from the perspective of g[0]
+func AllNotAnticlockwise(g Segment, s Shape) bool {
+	line := g[1].Minus(g[0])
+	return AllVertices(s, func(i int, v Vector) bool { return v.Minus(g[0]).Cross(line) >= 0 })
+}
+
+// AllNotClockwise returns true if none of s is clockwise of g[1], from the perspective of g[0]
+func AllNotClockwise(g Segment, s Shape) bool {
+	line := g[1].Minus(g[0])
+	return AllVertices(s, func(i int, v Vector) bool { return v.Minus(g[0]).Cross(line) <= 0 })
+}
+
 func Contains(s, s2 Shape) bool {
 	return s.Bounds().Contains(s2.Bounds()) && ContainsSkipBoundsCheck(s, s2)
 
 }
 
 func ContainsSkipBoundsCheck(s, s2 Shape) bool {
-	return s.ShapeType() == RECTANGLE || AllEdges(s, func(g Segment) bool { return g.AxisAligned() || AllClockwise(g, s2) })
+	return s.ShapeType() == RECTANGLE || AllEdges(s, func(g Segment) bool { return g.AxisAligned() || AllNotAnticlockwise(g, s2) })
 }
 
 func Intersects(s, s2 Shape) bool {
