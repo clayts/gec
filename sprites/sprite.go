@@ -9,7 +9,7 @@ import (
 type Sprite struct {
 	sheet      *Sheet
 	imageIndex int
-	min        [2]float32
+	offset     [2]float32
 	size       [2]float32
 }
 
@@ -45,7 +45,7 @@ func (s Sprite) Draw(transform geo.Transform, depth float32) {
 	s.sheet.renderer.DrawInstance(
 		float32(transform[0][0]), float32(transform[0][1]), float32(transform[0][2]), float32(transform[1][0]), float32(transform[1][1]), float32(transform[1][2]),
 		depth,
-		src.location[0]+s.min[0], src.location[1]+s.min[1], src.location[2],
+		src.location[0]+s.offset[0], src.location[1]+s.offset[1], src.location[2],
 		s.size[0], s.size[1],
 	)
 }
@@ -57,8 +57,8 @@ func (s Sprite) SubSprite(region geo.Rectangle) Sprite {
 
 	sub := s
 
-	sub.min[0] += float32(region.Min.X)
-	sub.min[1] += float32(region.Min.Y)
+	sub.offset[0] += float32(region.Min.X)
+	sub.offset[1] += float32(region.Min.Y)
 
 	size := region.Size()
 	sub.size[0] = float32(size.X)
