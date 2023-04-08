@@ -66,16 +66,3 @@ func (s Sprite) SubSprite(region geo.Rectangle) Sprite {
 
 	return sub
 }
-
-// func (s Sprite) DrawRegion(region geo.Rectangle, transform geo.Transform, depth float32) {
-// 	s.sheet.initialize()
-// 	src := s.sheet.sources[s.index]
-// 	dst := transform.Times(geo.Translation(src.offset))
-// 	size := region.Size()
-// 	s.sheet.renderer.DrawInstance(
-// 		float32(dst[0][0]), float32(dst[0][1]), float32(dst[0][2]), float32(dst[1][0]), float32(dst[1][1]), float32(dst[1][2]),
-// 		depth,
-// 		src.location[0]+float32(region.Min.X-src.offset.X), src.location[1]+float32(region.Min.Y-src.offset.Y), src.location[2],
-// 		float32(size.X), float32(size.Y),
-// 	)
-// }
