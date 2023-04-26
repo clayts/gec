@@ -9,15 +9,15 @@ import (
 
 type Shader uint32
 
-func NewVertexShader(source string) Shader {
+func OpenVertexShader(source string) Shader {
 	return newShader(source, gl.VERTEX_SHADER)
 }
 
-func NewGeometryShader(source string) Shader {
+func OpenGeometryShader(source string) Shader {
 	return newShader(source, gl.GEOMETRY_SHADER)
 }
 
-func NewFragmentShader(source string) Shader {
+func OpenFragmentShader(source string) Shader {
 	return newShader(source, gl.FRAGMENT_SHADER)
 }
 

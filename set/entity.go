@@ -11,13 +11,12 @@ func (s *Set[A]) New() *Entity[A] {
 	return e
 }
 
-func (e *Entity[A]) Enable() *Entity[A] {
-	e.set.add(e)
-	return e
-}
-
-func (e *Entity[A]) Disable() *Entity[A] {
-	e.set.remove(e)
+func (e *Entity[A]) SetState(state bool) *Entity[A] {
+	if state {
+		e.set.add(e)
+	} else {
+		e.set.remove(e)
+	}
 	return e
 }
 

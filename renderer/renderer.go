@@ -16,7 +16,7 @@ type buffer struct {
 
 func newBuffer(vao gfx.VAO, attributes []gfx.Attribute, divisor uint32, layout ...string) *buffer {
 	b := &buffer{}
-	b.vbo = gfx.NewVBO()
+	b.vbo = gfx.OpenVBO()
 
 	layoutData := []struct {
 		location gfx.AttributeLocation
@@ -91,7 +91,7 @@ func (b *buffer) count() int32 {
 }
 
 func (b *buffer) delete() {
-	b.vbo.Delete()
+	b.vbo.Close()
 }
 
 type Renderer struct {
@@ -126,8 +126,7 @@ func (r *Renderer) Render() {
 }
 
 func (r *Renderer) Delete() {
-	r.program.Delete()
-	r.vao.Delete()
+	r.vao.Close()
 	r.vertices.delete()
 }
 
@@ -174,7 +173,7 @@ func (r *InstanceRenderer) Render() {
 }
 
 func (r *InstanceRenderer) Delete() {
-	r.vao.Delete()
+	r.vao.Close()
 	r.vertices.delete()
 	r.instances.delete()
 }

@@ -6,7 +6,7 @@ import (
 
 type VBO uint32
 
-func NewVBO(data ...float32) VBO {
+func OpenVBO(data ...float32) VBO {
 	var vgl uint32
 	gl.GenBuffers(1, &vgl)
 
@@ -19,7 +19,7 @@ func NewVBO(data ...float32) VBO {
 
 func (v VBO) GL() uint32 { return uint32(v) }
 
-func (v VBO) Delete() {
+func (v VBO) Close() {
 	vgl := v.GL()
 	gl.DeleteBuffers(1, &vgl)
 }

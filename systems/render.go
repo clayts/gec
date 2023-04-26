@@ -1,26 +1,25 @@
 package systems
 
 import (
+	"github.com/clayts/gec/atlas"
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/space"
-	"github.com/clayts/gec/sprites"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 type Render struct {
-	Components space.Space[func(callShape geometry.Shape)]
-	Camera     geometry.Transform
-	OpaqueRenderer,
-	TransparentRenderer *sprites.Sheet
+	Components           space.Space[func(callShape geometry.Shape)]
+	Camera               geometry.Transform
+	Renderer             atlas.Renderer
+	OpaqueInstances      []float32
+	TransparentInstances []float32
 }
 
 func NewRender() *Render {
 	r := &Render{}
 
-	r.OpaqueRenderer = sprites.NewSheet()
-
-	r.TransparentRenderer = sprites.NewSheet()
+	r.Renderer = atlas.OpenRenderer()
 
 	r.Camera = geometry.T()
 
@@ -40,17 +39,16 @@ func (r *Render) Render() {
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Disable(gl.BLEND)
-	r.OpaqueRenderer.Render(r.Camera)
-	r.OpaqueRenderer.Clear()
+	r.Renderer.SetInstances(r.OpaqueInstances...)
+	r.Renderer.Render(r.Camera)
 
 	gl.DepthMask(false)
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
-	r.TransparentRenderer.Render(r.Camera)
-	r.TransparentRenderer.Clear()
+	r.Renderer.SetInstances(r.TransparentInstances...)
+	r.Renderer.Render(r.Camera)
 }
 
 func (r *Render) Delete() {
-	r.OpaqueRenderer.Delete()
-	r.TransparentRenderer.Delete()
+	r.Renderer.Close()
 }

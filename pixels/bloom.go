@@ -1,4 +1,4 @@
-package images
+package pixels
 
 import (
 	"image"
@@ -32,8 +32,6 @@ func Bloom(img image.Image, radius int, glow float64) image.Image {
 	}
 
 	newImg = blend.Add(newImg, extended)
-
-	newImg.Rect = extended.Rect
 
 	return newImg
 }

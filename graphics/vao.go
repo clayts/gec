@@ -24,7 +24,7 @@ func (v VAO) SetAttribute(a AttributeLocation, offset, size, stride int32, divis
 
 func (v VAO) GL() uint32 { return uint32(v) }
 
-func (v VAO) Delete() {
+func (v VAO) Close() {
 	vgl := v.GL()
 	gl.DeleteVertexArrays(1, &vgl)
 }

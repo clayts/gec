@@ -6,7 +6,7 @@ import (
 
 type Program uint32
 
-func NewProgram(shaders ...Shader) Program {
+func OpenProgram(shaders ...Shader) Program {
 	program := gl.CreateProgram()
 	for _, shader := range shaders {
 		gl.AttachShader(program, shader.GL())
@@ -17,7 +17,7 @@ func NewProgram(shaders ...Shader) Program {
 
 func (p Program) GL() uint32 { return uint32(p) }
 
-func (p Program) Delete() {
+func (p Program) Close() {
 	gl.DeleteProgram(p.GL())
 }
 
@@ -95,9 +95,16 @@ func (p Program) UniformLocation(uniformName string) UniformLocation {
 	return UniformLocation(gl.GetUniformLocation(p.GL(), gl.Str(uniformName+"\x00")))
 }
 
-func (p *Program) SetUniform(u UniformLocation, data interface{}) {
+func (p Program) SetUniform(u UniformLocation, data interface{}) {
 	gl.UseProgram(p.GL())
 	switch data := data.(type) {
+
+	case []TextureUnit:
+		slice := make([]int32, len(data))
+		for i, tu := range data {
+			slice[i] = int32(tu)
+		}
+		gl.Uniform1iv(u.GL(), int32(len(slice)), &slice[0])
 
 	case TextureUnit:
 		gl.Uniform1i(u.GL(), int32(data)) //NOT data.GL() for some reason (requires e.g. 0 for gl.TEXTURE0)

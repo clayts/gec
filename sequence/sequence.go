@@ -1,4 +1,4 @@
-package random
+package sequence
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type Sequence[A any] []struct {
 	Length float64
 }
 
-func MakeSequence[A any](slice ...A) Sequence[A] {
+func Make[A any](slice ...A) Sequence[A] {
 	s := make(Sequence[A], len(slice))
 	for i, item := range slice {
 		s[i].Item = item
@@ -21,7 +21,7 @@ func MakeSequence[A any](slice ...A) Sequence[A] {
 	return s
 }
 
-func GenerateSequence[A any](n int, generate func(i int) A) Sequence[A] {
+func Generate[A any](n int, generate func(i int) A) Sequence[A] {
 	s := make(Sequence[A], n)
 	for i := range s {
 		s[i].Item = generate(i)

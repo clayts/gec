@@ -7,10 +7,10 @@ in vec2 position;
 
 in mat2x3 dstTransform;
 in float dstDepth;
-in vec3 srcLocation;
+in vec4 srcLocation;
 in vec2 srcSize;
 
-out vec3 f_srcLocation;
+out vec4 f_srcLocation;
 
 void main() {
 	mat4 m;

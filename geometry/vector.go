@@ -54,6 +54,8 @@ func (v Vector) MagnitudeSquared() float64 { return v.Dot(v) }
 
 func (v Vector) Magnitude() float64 { return math.Sqrt(v.MagnitudeSquared()) }
 
+func (v Vector) Floored() Vector { return Vector{math.Floor(v.X), math.Floor(v.Y)} }
+
 func (v Vector) ShapeType() ShapeType { return POINT }
 
 func (v Vector) Vertex(i int) Vector {

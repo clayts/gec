@@ -20,17 +20,20 @@ func NewSource(seed int64) *Source {
 	noiseB := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
 	noiseC := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
 	noiseD := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
+	noiseE := opensimplex.NewNormalized(s.Rand.Int63()).Eval4
 
 	s.Noise = func(coordinates ...float64) float64 {
 		switch len(coordinates) {
+		case 0:
+			return noiseA(s.Float64()*1024, 0, 0, 0)
 		case 1:
-			return noiseA(coordinates[0], 0, 0, 0)
+			return noiseB(coordinates[0], 0, 0, 0)
 		case 2:
-			return noiseB(coordinates[0], coordinates[1], 0, 0)
+			return noiseC(coordinates[0], coordinates[1], 0, 0)
 		case 3:
-			return noiseC(coordinates[0], coordinates[1], coordinates[2], 0)
+			return noiseD(coordinates[0], coordinates[1], coordinates[2], 0)
 		case 4:
-			return noiseD(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
+			return noiseE(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
 		default:
 			panic("noise coordinates must be 1, 2, 3 or 4 dimensional")
 		}

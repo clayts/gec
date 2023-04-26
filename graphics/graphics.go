@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-func Initialize(title string) {
+func Open(title string) {
 	runtime.LockOSThread()
 
 	// GLFW
@@ -68,21 +68,31 @@ func Render() {
 	Window.SwapBuffers()
 }
 
-func Delete() {
+func Close() {
 	glfw.Terminate()
 }
 
-func MaximumTextureArrayLayers() int {
+func Query(glValueName uint32) int {
 	var v int32
-	gl.GetIntegerv(gl.MAX_ARRAY_TEXTURE_LAYERS, &v)
+	gl.GetIntegerv(glValueName, &v)
 	return int(v)
 }
 
-func MaximumTextureSize() int {
-	var v int32
-	gl.GetIntegerv(gl.MAX_TEXTURE_SIZE, &v)
-	return int(v)
-}
+// func MaximumTextureArrayLayers() int {
+// 	var v int32
+// 	gl.GetIntegerv(gl.MAX_ARRAY_TEXTURE_LAYERS, &v)
+// 	return int(v)
+// }
+
+// func MaximumTextureSize() int {
+// 	var v int32
+// 	gl.GetIntegerv(gl.MAX_TEXTURE_SIZE, &v)
+// 	return int(v)
+// }
+
+// func MaximumTextureUnits() int {
+// 	GL_MAX_TEXTURE_IMAGE_UNITS
+// }
 
 func Bounds() geometry.Rectangle {
 	width, height := Window.GetSize()
