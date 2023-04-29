@@ -25,17 +25,11 @@ func (v VBO) Close() {
 }
 
 func (v VBO) SetData(data ...float32) {
-	if len(data) == 0 {
-		panic("no data")
-	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, v.GL())
 	gl.BufferData(gl.ARRAY_BUFFER, 4*len(data), gl.Ptr(data), gl.STATIC_DRAW)
 }
 
 func (v VBO) SetDataSubsection(offset int, data ...float32) {
-	if len(data) == 0 {
-		panic("no data")
-	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, v.GL())
 	gl.BufferSubData(gl.ARRAY_BUFFER, 4*offset, 4*len(data), gl.Ptr(data))
 }

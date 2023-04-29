@@ -11,17 +11,7 @@ func (u TextureUnit) SetTexture(t Texture) {
 	gl.BindTexture(gl.TEXTURE_2D, t.GL())
 }
 
-func (u TextureUnit) WithSetTexture(t Texture) TextureUnit {
-	u.SetTexture(t)
-	return u
-}
-
 func (u TextureUnit) SetTextureArray(t TextureArray) {
 	gl.ActiveTexture(u.GL())
 	gl.BindTexture(gl.TEXTURE_2D_ARRAY, t.GL())
-}
-
-func (u TextureUnit) WithSetTextureArray(t TextureArray) TextureUnit {
-	u.SetTextureArray(t)
-	return u
 }

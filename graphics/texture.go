@@ -8,7 +8,7 @@ import (
 
 type Texture uint32
 
-func NewTexture(rgba *image.RGBA, smoothing bool, repeat bool, mirror, mipmap bool) Texture {
+func OpenTexture(rgba *image.RGBA, smoothing bool, repeat bool, mirror, mipmap bool) Texture {
 	var v uint32
 	gl.GenTextures(1, &v)
 	gl.BindTexture(gl.TEXTURE_2D, v)
@@ -62,7 +62,7 @@ func NewTexture(rgba *image.RGBA, smoothing bool, repeat bool, mirror, mipmap bo
 
 func (t Texture) GL() uint32 { return uint32(t) }
 
-func (t Texture) Delete() {
+func (t Texture) Close() {
 	tgl := t.GL()
 	gl.DeleteTextures(1, &tgl)
 }

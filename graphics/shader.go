@@ -23,7 +23,7 @@ func OpenFragmentShader(source string) Shader {
 
 func (sh Shader) GL() uint32 { return uint32(sh) }
 
-func (sh Shader) Delete() {
+func (sh Shader) Close() {
 	gl.DeleteShader(uint32(sh))
 }
 

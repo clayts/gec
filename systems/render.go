@@ -5,21 +5,18 @@ import (
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/space"
-	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 type Render struct {
-	Components           space.Space[func(callShape geometry.Shape)]
-	Camera               geometry.Transform
-	Renderer             atlas.Renderer
-	OpaqueInstances      []float32
-	TransparentInstances []float32
+	Components space.Space[func(callShape geometry.Shape)]
+	Camera     geometry.Transform
+	Buffer     atlas.Atlas
 }
 
-func NewRender() *Render {
+func OpenRender() *Render {
 	r := &Render{}
 
-	r.Renderer = atlas.OpenRenderer()
+	r.Buffer = atlas.OpenAtlas()
 
 	r.Camera = geometry.T()
 
@@ -34,21 +31,9 @@ func (r *Render) Render() {
 		return true
 	})
 
-	gl.DepthMask(true)
-	graphics.Clear(false, true, false)
-
-	gl.Enable(gl.DEPTH_TEST)
-	gl.Disable(gl.BLEND)
-	r.Renderer.SetInstances(r.OpaqueInstances...)
-	r.Renderer.Render(r.Camera)
-
-	gl.DepthMask(false)
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
-	r.Renderer.SetInstances(r.TransparentInstances...)
-	r.Renderer.Render(r.Camera)
+	r.Buffer.Draw(r.Camera)
 }
 
-func (r *Render) Delete() {
-	r.Renderer.Close()
+func (r *Render) Close() {
+	r.Buffer.Close()
 }

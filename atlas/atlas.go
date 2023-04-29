@@ -7,7 +7,6 @@ import (
 	"image/draw"
 	"sort"
 
-	geo "github.com/clayts/gec/geometry"
 	gfx "github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/pixels"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -23,8 +22,13 @@ var (
 	shaders []gfx.Shader
 	program gfx.Program
 	volumes []gfx.TextureArray
-	entries []*entry
+	entries []entry
 )
+
+type entry struct {
+	image.Image
+	volume, page, x, y float32
+}
 
 func Open() {
 	shaders = []gfx.Shader{
@@ -37,31 +41,22 @@ func Open() {
 }
 
 func pack() {
-	// Sort images by size
-	sort.Slice(entries, func(i, j int) bool {
-		ib := entries[i].Bounds()
-		jb := entries[j].Bounds()
-		return ib.Dx()*ib.Dy() > jb.Dx()*jb.Dy()
-	})
+	// Know Volume limit - hardcoded into fragment shader, the minimum required to be supported by all compatible hardware
+	const maxVolumeCount = 16
 
 	// Get page limits
 	maxPageCount := gfx.Query(gl.MAX_ARRAY_TEXTURE_LAYERS)
 	maxPageSize := gfx.Query(gl.MAX_TEXTURE_SIZE)
 
-	// Know Volume limit - hardcoded into fragment shader, the minimum required to be supported by all compatible hardware
-	const maxVolumeCount = 16
-
-	fmt.Println("texture space:", maxVolumeCount, "x", maxPageCount, "x", "(", maxPageSize, "x", maxPageSize, ")")
-
-	// Make list of free spaces, with the first spaces at the end
+	// Make list of free spaces
 	type space struct {
 		x, y, w, h, page, volume int
 	}
 
 	spaces := []space{}
 
-	for volume := maxVolumeCount - 1; volume >= 0; volume-- {
-		for page := maxPageCount - 1; page >= 0; page-- {
+	for volume := 0; volume < maxVolumeCount; volume++ {
+		for page := 0; page < maxPageCount; page++ {
 			spaces = append(spaces, space{0, 0, maxPageSize, maxPageSize, page, volume})
 		}
 	}
@@ -73,16 +68,25 @@ func pack() {
 		pageCount int
 	}{}
 
-	// Arrange
-	for _, img := range entries {
-		b := img.Bounds()
+	// Get list of entry indices, sorted by size
+	indices := make([]int, len(entries))
+	for i := range indices {
+		indices[i] = i
+	}
+	sort.Slice(indices, func(i, j int) bool {
+		ib := entries[i].Bounds()
+		jb := entries[j].Bounds()
+		return ib.Dx()*ib.Dy() > jb.Dx()*jb.Dy()
+	})
 
+	// Arrange
+	for _, index := range indices {
+		ent := entries[index]
+		packed := false
+
+		b := ent.Bounds()
 		// Check each space, from last to first
-		for i := len(spaces) - 1; i >= -1; i-- {
-			if i == -1 {
-				panic("unable to pack images")
-			}
-			s := spaces[i]
+		for i, s := range spaces {
 			if b.Dx() <= s.w && b.Dy() <= s.h {
 				// Found the space; add the box to its top-left corner
 				// |-------?-------|
@@ -90,10 +94,11 @@ func pack() {
 				// ?????????       |
 				// |         space |
 				// |_______________|
-				img.volume = float32(s.volume)
-				img.page = float32(s.page)
-				img.x = float32(s.x)
-				img.y = float32(s.y)
+				ent.volume = float32(s.volume)
+				ent.page = float32(s.page)
+				ent.x = float32(s.x)
+				ent.y = float32(s.y)
+				packed = true
 
 				// Keep track of volume sizes
 				if s.x+b.Dx() > volumeSizes[s.volume].width {
@@ -121,7 +126,9 @@ func pack() {
 					// |-------|---------------|
 					// |  box  |     new space |
 					// |_______|_______________|
-					spaces = append(spaces, space{s.x + b.Dx(), s.y, s.w - b.Dx(), s.h, s.page, s.volume})
+					spaces = append([]space{
+						{s.x + b.Dx(), s.y, s.w - b.Dx(), s.h, s.page, s.volume},
+					}, spaces...)
 				} else if b.Dx() == s.w {
 					// Space matches the box width
 					// |---------------|
@@ -129,7 +136,9 @@ func pack() {
 					// |_______________|
 					// |     new space |
 					// |_______________|
-					spaces = append(spaces, space{s.x, s.y + b.Dy(), s.w, s.h - b.Dy(), s.page, s.volume})
+					spaces = append([]space{
+						{s.x, s.y + b.Dy(), s.w, s.h - b.Dy(), s.page, s.volume},
+					}, spaces...)
 				} else {
 					// Otherwise the box splits the space into two spaces
 					// |-------|-----------|
@@ -137,168 +146,76 @@ func pack() {
 					// |_______|___________|
 					// |     new space     |
 					// |___________________|
-					spaces = append(spaces, space{s.x + b.Dx(), s.y, s.w - b.Dx(), b.Dy(), s.page, s.volume})
-					spaces = append(spaces, space{s.x, s.y + b.Dy(), s.w, s.h - b.Dy(), s.page, s.volume})
+					spaces = append([]space{
+						{s.x, s.y + b.Dy(), s.w, s.h - b.Dy(), s.page, s.volume},
+						{s.x + b.Dx(), s.y, s.w - b.Dx(), b.Dy(), s.page, s.volume},
+					}, spaces...)
 				}
 				break
 			}
 		}
+		if packed {
+			entries[index] = ent
+		} else {
+			panic("insufficient storage capacity")
+		}
 	}
 
 	// Create RGBAs
-	rgbas := [maxVolumeCount][]*image.RGBA{}
+	rgbaVolumes := [maxVolumeCount][]*image.RGBA{}
 	for volume, volumeSize := range volumeSizes {
-		rgbas[volume] = make([]*image.RGBA, volumeSize.pageCount)
-		for page := range rgbas[volume] {
-			rgbas[volume][page] = image.NewRGBA(image.Rect(0, 0, volumeSize.width, volumeSize.height))
+		rgbaVolumes[volume] = make([]*image.RGBA, volumeSize.pageCount)
+		for page := range rgbaVolumes[volume] {
+			rgbaVolumes[volume][page] = image.NewRGBA(image.Rect(0, 0, volumeSize.width, volumeSize.height))
 		}
 	}
 
 	// Copy data
-	for _, img := range entries {
-		rgba := rgbas[int(img.volume)][int(img.page)]
+	for _, ent := range entries {
+		rgba := rgbaVolumes[int(ent.volume)][int(ent.page)]
 		// Draw(dst Image, r image.Rectangle, src image.Image, sp image.Point, op Op)
 		// Draw aligns r.Min in dst with sp in src and then replaces the rectangle r in dst
 		draw.Draw(
 			rgba, // dst
-			image.Rect(int(img.x), int(img.y), int(img.x)+img.Bounds().Dx(), int(img.y)+img.Bounds().Dy()), // r
-			pixels.FlipY(img), // src
-			img.Bounds().Min,  // sp
+			image.Rect(int(ent.x), int(ent.y), int(ent.x)+ent.Bounds().Dx(), int(ent.y)+ent.Bounds().Dy()), // r
+			pixels.FlipY(ent), // src
+			ent.Bounds().Min,  // sp
 			draw.Src,          // op
 		)
 	}
 
 	// Create TextureArrays
-	for _, volumeRGBAs := range rgbas {
-		if len(volumeRGBAs) > 0 {
-			volumes = append(volumes, gfx.NewTextureArray(volumeRGBAs, false, false, false, false))
+	for _, rgbaPages := range rgbaVolumes {
+		if len(rgbaPages) > 0 {
+			volumes = append(volumes, gfx.OpenTextureArray(rgbaPages, false, false, false, false))
 		}
 	}
+
+	// DEBUG - save atlas
+	for i, rgbaPages := range rgbaVolumes {
+		for j, rgbaPage := range rgbaPages {
+			pixels.SaveImage(fmt.Sprint("volume", i, "page", j, ".png"), rgbaPage)
+		}
+	}
+}
+
+func Clear() {
+	for i := range entries {
+		entries[i] = entry{}
+	}
+	entries = entries[:0]
 }
 
 func Close() {
 	program.Close()
 
 	for _, shader := range shaders {
-		shader.Delete()
+		shader.Close()
 	}
 	shaders = shaders[:0]
 
 	for _, volume := range volumes {
-		volume.Delete()
+		volume.Close()
 	}
 	volumes = volumes[:0]
-
-	for i := range entries {
-		entries[i] = nil
-	}
-	entries = entries[:0]
-}
-
-type entry struct {
-	image.Image
-	volume, page, x, y float32
-}
-
-type Sprite struct {
-	entry     *entry
-	region    geo.Rectangle
-	Transform geo.Transform
-	Depth     float32
-}
-
-func MakeSprite(source image.Image) Sprite {
-	ent := &entry{Image: source}
-	entries = append(entries, ent)
-	bounds := source.Bounds()
-	return Sprite{
-		entry:     ent,
-		region:    geo.R(geo.V(float64(bounds.Min.X), float64(bounds.Min.Y)), geo.V(float64(bounds.Max.X), float64(bounds.Max.Y))),
-		Transform: geo.T(),
-		Depth:     0,
-	}
-}
-
-func (spr Sprite) WithRegion(region geo.Rectangle) Sprite {
-	if !spr.region.Contains(region) {
-		panic("region out of bounds")
-	}
-	spr.region = region
-	return spr
-}
-
-func (spr Sprite) WithTransform(transform geo.Transform) Sprite {
-	spr.Transform = transform
-	return spr
-}
-
-func (spr Sprite) WithDepth(depth float32) Sprite {
-	spr.Depth = depth
-	return spr
-}
-
-func (spr Sprite) Region() geo.Rectangle { return spr.region }
-
-func (spr Sprite) Image() image.Image { return spr.entry }
-
-func (spr Sprite) Shape() geo.Shape {
-	return spr.Transform.Rectangle(geo.R(geo.V(0, 0), spr.region.Size()))
-}
-
-func (spr Sprite) Instance() []float32 {
-	size := spr.region.Size()
-	return []float32{
-		float32(spr.Transform[0][0]), float32(spr.Transform[0][1]), float32(spr.Transform[0][2]), float32(spr.Transform[1][0]), float32(spr.Transform[1][1]), float32(spr.Transform[1][2]),
-		spr.Depth,
-		spr.entry.x + float32(spr.region.Min.X), spr.entry.y + float32(spr.region.Min.Y), spr.entry.page, spr.entry.volume,
-		float32(size.X), float32(size.Y),
-	}
-}
-
-type Renderer struct {
-	renderer *gfx.Renderer
-}
-
-func OpenRenderer() Renderer {
-	ren := Renderer{}
-	ren.renderer = gfx.OpenRenderer(
-		gfx.TRIANGLE_STRIP,
-		[]string{"position"},
-		[]string{"dstTransform", "dstDepth", "srcLocation", "srcSize"},
-		program,
-	)
-	ren.renderer.SetVertices(
-		0, 0,
-		0, 1,
-		1, 0,
-		1, 1,
-	)
-	return ren
-}
-
-func (ren Renderer) Render(camera geo.Transform) {
-	w, h := gfx.Window.GetSize()
-	program.SetUniform(program.UniformLocation("screenSize"), [2]float32{float32(w), float32(h)})
-
-	inverse := camera.Inverse()
-	program.SetUniform(program.UniformLocation("cameraTransform"), [2][3]float32{
-		{float32(inverse[0][0]), float32(inverse[0][1]), float32(inverse[0][2])},
-		{float32(inverse[1][0]), float32(inverse[1][1]), float32(inverse[1][2])},
-	})
-
-	textureUnits := make([]gfx.TextureUnit, len(volumes))
-	for i, volume := range volumes {
-		textureUnits[i] = gfx.TextureUnit(i).WithSetTextureArray(volume)
-	}
-	program.SetUniform(program.UniformLocation("textureArray"), textureUnits)
-
-	ren.renderer.Render()
-}
-
-func (ren Renderer) SetInstances(instances ...float32) {
-	ren.renderer.SetInstances(instances...)
-}
-
-func (ren Renderer) Close() {
-	ren.renderer.Close()
 }

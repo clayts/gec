@@ -9,7 +9,7 @@ import (
 type TextureArray uint32
 
 // Images must be the same size
-func NewTextureArray(images []*image.RGBA, smoothing, repeat, mirror, mipmap bool) TextureArray {
+func OpenTextureArray(images []*image.RGBA, smoothing, repeat, mirror, mipmap bool) TextureArray {
 	width := int32(images[0].Bounds().Dx())
 	height := int32(images[0].Bounds().Dy())
 	var v uint32
@@ -58,7 +58,7 @@ func NewTextureArray(images []*image.RGBA, smoothing, repeat, mirror, mipmap boo
 
 func (t TextureArray) GL() uint32 { return uint32(t) }
 
-func (t TextureArray) Delete() {
+func (t TextureArray) Close() {
 	v := t.GL()
 	gl.DeleteTextures(1, &v)
 }

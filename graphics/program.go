@@ -21,74 +21,8 @@ func (p Program) Close() {
 	gl.DeleteProgram(p.GL())
 }
 
-func (p Program) Draw(vao VAO, mode Mode, firstVertex, vertexCount int32) {
-	gl.UseProgram(p.GL())
-	gl.BindVertexArray(vao.GL())
-	gl.DrawArrays(mode.GL(), firstVertex, vertexCount)
-}
-
-func (p Program) DrawInstanced(vao VAO, mode Mode, firstVertex, vertexCount, instanceCount int32) {
-	gl.UseProgram(p.GL())
-	gl.BindVertexArray(vao.GL())
-	gl.DrawArraysInstanced(mode.GL(), firstVertex, vertexCount, instanceCount)
-}
-
-func (p Program) Attributes() []Attribute {
-	var attributeCount int32
-	gl.GetProgramiv(p.GL(), gl.ACTIVE_ATTRIBUTES, &attributeCount)
-	attributes := make([]Attribute, attributeCount)
-	for i := int32(0); i < attributeCount; i++ {
-		var length int32
-		var l int32
-		var xtype uint32
-		var buf [256]byte
-		gl.GetActiveAttrib(p.GL(), uint32(i), int32(len(buf)), &length, &l, &xtype, &buf[0])
-		s := gl.GoStr(&buf[0])
-		locationUnchecked := gl.GetAttribLocation(p.GL(), gl.Str(s+"\x00"))
-		if locationUnchecked < 0 {
-			panic("invalid attribute " + s)
-		}
-		location := AttributeLocation(locationUnchecked)
-		m, n := dimensions(xtype)
-		attributes[i].name = s
-		attributes[i].location = location
-		attributes[i].l = l
-		attributes[i].m = m
-		attributes[i].n = n
-	}
-	return attributes
-}
-
-func dimensions(t uint32) (m, n int32) {
-	switch t {
-	case gl.FLOAT:
-		return 1, 1
-	case gl.FLOAT_VEC2:
-		return 1, 2
-	case gl.FLOAT_VEC3:
-		return 1, 3
-	case gl.FLOAT_VEC4:
-		return 1, 4
-	case gl.FLOAT_MAT2:
-		return 2, 2
-	case gl.FLOAT_MAT3:
-		return 3, 3
-	case gl.FLOAT_MAT4:
-		return 4, 4
-	case gl.FLOAT_MAT2x3:
-		return 2, 3
-	case gl.FLOAT_MAT2x4:
-		return 2, 4
-	case gl.FLOAT_MAT3x2:
-		return 3, 2
-	case gl.FLOAT_MAT3x4:
-		return 3, 4
-	case gl.FLOAT_MAT4x2:
-		return 4, 2
-	case gl.FLOAT_MAT4x3:
-		return 4, 3
-	}
-	panic("invalid attribute type")
+func (p Program) AttributeLocation(name string) AttributeLocation {
+	return AttributeLocation(gl.GetAttribLocation(p.GL(), gl.Str(name+"\x00")))
 }
 
 func (p Program) UniformLocation(uniformName string) UniformLocation {

@@ -16,12 +16,13 @@ func main() {
 	atlas.Open()
 	defer atlas.Close()
 
-	ren := atlas.OpenRenderer()
-	defer ren.Close()
-	ren.SetInstances(spr.Instance()...)
+	buf := atlas.OpenBuffer()
+	defer buf.Close()
+
+	buf.Add(spr)
 
 	for !graphics.Window.ShouldClose() {
-		ren.Render(geometry.T())
+		buf.Draw(geometry.T())
 		graphics.Render()
 		graphics.Clear(true, false, false)
 	}
