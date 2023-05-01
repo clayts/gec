@@ -1,7 +1,5 @@
 package graphics
 
-import "fmt"
-
 type Layout []struct {
 	Location                     AttributeLocation
 	Elements, Components, Length int32
@@ -70,7 +68,6 @@ func (avb *autoVBO) Stride() int32 { return avb.stride }
 
 func (avb *autoVBO) sync() {
 	if !avb.synchronized {
-		fmt.Println("sync", avb.data)
 		if len(avb.data) <= avb.vboCapacity {
 			avb.vbo.SetDataSubsection(0, avb.data...)
 		} else {

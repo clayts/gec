@@ -2,7 +2,6 @@ package atlas
 
 import (
 	_ "embed"
-	"fmt"
 	"image"
 	"image/draw"
 	"sort"
@@ -23,6 +22,7 @@ var (
 	program gfx.Program
 	volumes []gfx.TextureArray
 	entries []entry
+	layers  []gfx.Buffer
 )
 
 type entry struct {
@@ -30,12 +30,17 @@ type entry struct {
 	volume, page, x, y float32
 }
 
-func Open() {
+func Open(layerCount int) {
 	shaders = []gfx.Shader{
 		gfx.OpenVertexShader(vertexShaderSource),
 		gfx.OpenFragmentShader(fragmentShaderSource),
 	}
 	program = gfx.OpenProgram(shaders...)
+
+	layers = make([]gfx.Buffer, layerCount)
+	for i := range layers {
+		layers[i] = openLayer()
+	}
 
 	pack()
 }
@@ -192,18 +197,11 @@ func pack() {
 	}
 
 	// DEBUG - save atlas
-	for i, rgbaPages := range rgbaVolumes {
-		for j, rgbaPage := range rgbaPages {
-			pixels.SaveImage(fmt.Sprint("volume", i, "page", j, ".png"), rgbaPage)
-		}
-	}
-}
-
-func Clear() {
-	for i := range entries {
-		entries[i] = entry{}
-	}
-	entries = entries[:0]
+	// for i, rgbaPages := range rgbaVolumes {
+	// 	for j, rgbaPage := range rgbaPages {
+	// 		pixels.SaveImage(fmt.Sprint("volume", i, "page", j, ".png"), rgbaPage)
+	// 	}
+	// }
 }
 
 func Close() {
@@ -218,4 +216,14 @@ func Close() {
 		volume.Close()
 	}
 	volumes = volumes[:0]
+
+	for _, layer := range layers {
+		layer.Close()
+	}
+	layers = layers[:0]
+
+	for i := range entries {
+		entries[i] = entry{}
+	}
+	entries = entries[:0]
 }

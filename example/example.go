@@ -13,16 +13,13 @@ func main() {
 
 	spr := atlas.MakeSprite(pixels.LoadRGBA("test.png"))
 
-	atlas.Open()
+	atlas.Open(1)
 	defer atlas.Close()
 
-	buf := atlas.OpenBuffer()
-	defer buf.Close()
-
-	buf.Add(spr)
-
 	for !graphics.Window.ShouldClose() {
-		buf.Draw(geometry.T())
+		spr.Draw()
+		atlas.Layer(0).Draw(geometry.T())
+		atlas.Layer(0).Clear()
 		graphics.Render()
 		graphics.Clear(true, false, false)
 	}
