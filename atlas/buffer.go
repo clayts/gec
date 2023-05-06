@@ -26,7 +26,7 @@ func OpenBuffer() Buffer {
 		1, 0,
 		1, 1,
 	}
-	buf.internal = gfx.OpenBuffer(gfx.TRIANGLE_STRIP, vertexLayout, instanceLayout)
+	buf.internal = gfx.OpenBuffer(gfx.TriangleStrip, vertexLayout, instanceLayout)
 	buf.internal.Vertices().Add(vertices...)
 	return buf
 }
@@ -52,18 +52,6 @@ func (buf Buffer) Draw(camera geo.Transform) {
 		textureUnits[i] = u
 	}
 	program.SetUniform(program.UniformLocation("textureArray"), textureUnits)
-
-	// gl.DepthMask(true)
-	// gfx.Clear(false, true, false)
-
-	// gl.Enable(gl.DEPTH_TEST)
-	// gl.Disable(gl.BLEND)
-	// buf.opaque.Draw(program)
-
-	// gl.DepthMask(false)
-	// gl.Enable(gl.BLEND)
-	// gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
-	// buf.transparent.Draw(program)
 
 	buf.internal.Draw(program)
 }

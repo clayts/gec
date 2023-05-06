@@ -82,6 +82,7 @@ func (avb *autoVBO) close() {
 	avb.vbo.Close()
 }
 
+// OpenBuffer, Buffer.Draw and Buffer.Close must be called from the main thread. All other methods can be called from another thread. Concurrent usage from multiple threads is not supported.
 type Buffer struct {
 	mode                Mode
 	vao                 VAO
