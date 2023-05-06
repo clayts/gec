@@ -5,21 +5,44 @@ import (
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/pixels"
+	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 func main() {
 	graphics.Open("example")
 	defer graphics.Close()
 
-	spr := atlas.MakeSprite(pixels.LoadRGBA("test.png"))
-
-	atlas.Open(1)
+	atlas.Open()
 	defer atlas.Close()
 
+	opaque := atlas.OpenBuffer()
+	defer opaque.Close()
+
+	transparent := atlas.OpenBuffer()
+	defer transparent.Close()
+
+	spr := atlas.MakeSprite(pixels.LoadRGBA("test.png"))
+	spr2 := atlas.MakeSprite(pixels.LoadRGBA("test2.png"))
+
+	atlas.Pack()
+
 	for !graphics.Window.ShouldClose() {
-		spr.Draw()
-		atlas.Layer(0).Draw(geometry.T())
-		atlas.Layer(0).Clear()
+		spr.Draw(geometry.Translation(geometry.V(50, 50)), 0.5, opaque)
+		spr2.Draw(geometry.T(), 0, transparent)
+
+		gl.DepthMask(true)
+		graphics.Clear(false, true, false)
+		gl.Enable(gl.DEPTH_TEST)
+		gl.Disable(gl.BLEND)
+		opaque.Draw(geometry.T())
+		opaque.Clear()
+
+		gl.DepthMask(false)
+		gl.Enable(gl.BLEND)
+		gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
+		transparent.Draw(geometry.T())
+		transparent.Clear()
+
 		graphics.Render()
 		graphics.Clear(true, false, false)
 	}

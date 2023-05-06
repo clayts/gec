@@ -5,11 +5,12 @@ import (
 	gfx "github.com/clayts/gec/graphics"
 )
 
-// TODO get rid of systems
+type Buffer struct {
+	internal gfx.Buffer
+}
 
-type Layer int
-
-func openLayer() gfx.Buffer {
+func OpenBuffer() Buffer {
+	buf := Buffer{}
 	vertexLayout := gfx.Layout{
 		{program.AttributeLocation("position"), 1, 1, 2},
 	}
@@ -25,16 +26,16 @@ func openLayer() gfx.Buffer {
 		1, 0,
 		1, 1,
 	}
-	layer := gfx.OpenBuffer(gfx.TRIANGLE_STRIP, vertexLayout, instanceLayout)
-	layer.Vertices().Add(vertices...)
-	return layer
+	buf.internal = gfx.OpenBuffer(gfx.TRIANGLE_STRIP, vertexLayout, instanceLayout)
+	buf.internal.Vertices().Add(vertices...)
+	return buf
 }
 
-func (l Layer) Clear() {
-	layers[l].Instances().Clear()
+func (buf Buffer) Clear() {
+	buf.internal.Instances().Clear()
 }
 
-func (l Layer) Draw(camera geo.Transform) {
+func (buf Buffer) Draw(camera geo.Transform) {
 	w, h := gfx.Window.GetSize()
 	program.SetUniform(program.UniformLocation("screenSize"), [2]float32{float32(w), float32(h)})
 
@@ -64,5 +65,7 @@ func (l Layer) Draw(camera geo.Transform) {
 	// gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
 	// buf.transparent.Draw(program)
 
-	layers[l].Draw(program)
+	buf.internal.Draw(program)
 }
+
+func (buf Buffer) Close() { buf.internal.Close() }

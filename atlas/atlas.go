@@ -22,30 +22,22 @@ var (
 	program gfx.Program
 	volumes []gfx.TextureArray
 	entries []entry
-	layers  []gfx.Buffer
 )
 
 type entry struct {
 	image.Image
-	volume, page, x, y float32
+	volume, page, x, y, w, h float32
 }
 
-func Open(layerCount int) {
+func Open() {
 	shaders = []gfx.Shader{
 		gfx.OpenVertexShader(vertexShaderSource),
 		gfx.OpenFragmentShader(fragmentShaderSource),
 	}
 	program = gfx.OpenProgram(shaders...)
-
-	layers = make([]gfx.Buffer, layerCount)
-	for i := range layers {
-		layers[i] = openLayer()
-	}
-
-	pack()
 }
 
-func pack() {
+func Pack() {
 	// Know Volume limit - hardcoded into fragment shader, the minimum required to be supported by all compatible hardware
 	const maxVolumeCount = 16
 
@@ -103,6 +95,8 @@ func pack() {
 				ent.page = float32(s.page)
 				ent.x = float32(s.x)
 				ent.y = float32(s.y)
+				ent.w = float32(b.Dx())
+				ent.h = float32(b.Dy())
 				packed = true
 
 				// Keep track of volume sizes
@@ -182,7 +176,7 @@ func pack() {
 		// Draw aligns r.Min in dst with sp in src and then replaces the rectangle r in dst
 		draw.Draw(
 			rgba, // dst
-			image.Rect(int(ent.x), int(ent.y), int(ent.x)+ent.Bounds().Dx(), int(ent.y)+ent.Bounds().Dy()), // r
+			image.Rect(int(ent.x), int(ent.y), int(ent.x+ent.w), int(ent.y+ent.h)), // r
 			pixels.FlipY(ent), // src
 			ent.Bounds().Min,  // sp
 			draw.Src,          // op
@@ -216,11 +210,6 @@ func Close() {
 		volume.Close()
 	}
 	volumes = volumes[:0]
-
-	for _, layer := range layers {
-		layer.Close()
-	}
-	layers = layers[:0]
 
 	for i := range entries {
 		entries[i] = entry{}
