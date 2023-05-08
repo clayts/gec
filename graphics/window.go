@@ -16,8 +16,12 @@ func initWindow(title string) {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	glfw.WindowHint(glfw.Decorated, glfw.False)
 
-	w, err := glfw.CreateWindow(1, 1, title, glfw.GetPrimaryMonitor(), nil)
+	monitor := glfw.GetPrimaryMonitor()
+	mode := monitor.GetVideoMode()
+
+	w, err := glfw.CreateWindow(mode.Width, mode.Height, title, monitor, nil)
 	if err != nil {
 		panic(err)
 	}

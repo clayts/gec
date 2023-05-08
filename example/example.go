@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/clayts/gec/atlas"
+	"github.com/clayts/gec/art"
 	"github.com/clayts/gec/geometry"
 	"github.com/clayts/gec/graphics"
 	"github.com/clayts/gec/pixels"
@@ -12,14 +12,15 @@ func main() {
 	graphics.Open("example")
 	defer graphics.Close()
 
-	atlas.Open()
+	art.Open()
+	defer art.Close()
+
+	const (
+		opaque = iota
+		transparent
+	)
+	atlas := art.OpenAtlas(2)
 	defer atlas.Close()
-
-	opaque := atlas.OpenBuffer()
-	defer opaque.Close()
-
-	transparent := atlas.OpenBuffer()
-	defer transparent.Close()
 
 	spr := atlas.MakeSprite(pixels.LoadRGBA("test.png"))
 	spr2 := atlas.MakeSprite(pixels.LoadRGBA("test2.png"))
@@ -27,24 +28,25 @@ func main() {
 	atlas.Pack()
 
 	for !graphics.Window.ShouldClose() {
-		spr.Draw(geometry.Translation(geometry.V(50, 50)), 0.5, opaque)
+		spr.Draw(geometry.Translation(geometry.V(10, 10)), 0.5, opaque)
 		spr2.Draw(geometry.T(), 0, transparent)
 
 		gl.DepthMask(true)
 		graphics.Clear(false, true, false)
 		gl.Enable(gl.DEPTH_TEST)
 		gl.Disable(gl.BLEND)
-		opaque.Draw(geometry.T())
-		opaque.Clear()
+		atlas.Buffers(opaque).Draw(geometry.T())
 
 		gl.DepthMask(false)
 		gl.Enable(gl.BLEND)
 		gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
-		transparent.Draw(geometry.T())
-		transparent.Clear()
+		atlas.Buffers(transparent).Draw(geometry.T())
+
+		atlas.Buffers(transparent, opaque).Clear()
 
 		graphics.Render()
 		graphics.Clear(true, false, false)
+
 	}
 }
 

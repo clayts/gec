@@ -1,6 +1,7 @@
 package graphics
 
 import (
+	"github.com/clayts/gec/geometry"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
@@ -34,14 +35,23 @@ func (p Program) SetUniform(u UniformLocation, data interface{}) {
 	switch data := data.(type) {
 
 	case []TextureUnit:
-		slice := make([]int32, len(data))
-		for i, tu := range data {
-			slice[i] = int32(tu)
+		if len(data) > 0 {
+			slice := make([]int32, len(data))
+			for i, tu := range data {
+				slice[i] = int32(tu)
+			}
+			gl.Uniform1iv(u.GL(), int32(len(slice)), &slice[0])
 		}
-		gl.Uniform1iv(u.GL(), int32(len(slice)), &slice[0])
 
 	case TextureUnit:
 		gl.Uniform1i(u.GL(), int32(data)) //NOT data.GL() for some reason (requires e.g. 0 for gl.TEXTURE0)
+
+	case geometry.Transform:
+		buf := [6]float32{float32(data[0][0]), float32(data[0][1]), float32(data[0][2]), float32(data[1][0]), float32(data[1][1]), float32(data[1][2])}
+		gl.UniformMatrix2x3fv(u.GL(), 1, false, &buf[0])
+
+	case geometry.Vector:
+		gl.Uniform2f(u.GL(), float32(data.X), float32(data.Y))
 
 	case float32:
 		gl.Uniform1f(u.GL(), data)

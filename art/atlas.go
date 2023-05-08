@@ -1,43 +1,34 @@
-package atlas
+package art
 
 import (
-	_ "embed"
 	"image"
 	"image/draw"
 	"sort"
 
+	geo "github.com/clayts/gec/geometry"
 	gfx "github.com/clayts/gec/graphics"
+	auto "github.com/clayts/gec/graphics/automatic"
 	"github.com/clayts/gec/pixels"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-var (
-	//go:embed shaders/vertex.glsl
-	vertexShaderSource string
-
-	//go:embed shaders/fragment.glsl
-	fragmentShaderSource string
-
-	shaders []gfx.Shader
-	program gfx.Program
+type Atlas struct {
 	volumes []gfx.TextureArray
 	entries []entry
-)
-
-type entry struct {
-	image.Image
-	volume, page, x, y, w, h float32
+	buffers []auto.Buffer
 }
 
-func Open() {
-	shaders = []gfx.Shader{
-		gfx.OpenVertexShader(vertexShaderSource),
-		gfx.OpenFragmentShader(fragmentShaderSource),
+func OpenAtlas(buffers int) *Atlas {
+	atl := &Atlas{}
+	atl.buffers = make([]auto.Buffer, buffers)
+	for i := range atl.buffers {
+		atl.buffers[i] = openBuffer()
 	}
-	program = gfx.OpenProgram(shaders...)
+
+	return atl
 }
 
-func Pack() {
+func (atl *Atlas) Pack() {
 	// Know Volume limit - hardcoded into fragment shader, the minimum required to be supported by all compatible hardware
 	const maxVolumeCount = 16
 
@@ -66,19 +57,19 @@ func Pack() {
 	}{}
 
 	// Get list of entry indices, sorted by size
-	indices := make([]int, len(entries))
+	indices := make([]int, len(atl.entries))
 	for i := range indices {
 		indices[i] = i
 	}
 	sort.Slice(indices, func(i, j int) bool {
-		ib := entries[i].Bounds()
-		jb := entries[j].Bounds()
+		ib := atl.entries[i].Bounds()
+		jb := atl.entries[j].Bounds()
 		return ib.Dx()*ib.Dy() > jb.Dx()*jb.Dy()
 	})
 
 	// Arrange
 	for _, index := range indices {
-		ent := entries[index]
+		ent := atl.entries[index]
 		packed := false
 
 		b := ent.Bounds()
@@ -154,7 +145,7 @@ func Pack() {
 			}
 		}
 		if packed {
-			entries[index] = ent
+			atl.entries[index] = ent
 		} else {
 			panic("insufficient storage capacity")
 		}
@@ -170,7 +161,7 @@ func Pack() {
 	}
 
 	// Copy data
-	for _, ent := range entries {
+	for _, ent := range atl.entries {
 		rgba := rgbaVolumes[int(ent.volume)][int(ent.page)]
 		// Draw(dst Image, r image.Rectangle, src image.Image, sp image.Point, op Op)
 		// Draw aligns r.Min in dst with sp in src and then replaces the rectangle r in dst
@@ -186,7 +177,7 @@ func Pack() {
 	// Create TextureArrays
 	for _, rgbaPages := range rgbaVolumes {
 		if len(rgbaPages) > 0 {
-			volumes = append(volumes, gfx.OpenTextureArray(rgbaPages, false, false, false, false))
+			atl.volumes = append(atl.volumes, gfx.OpenTextureArray(rgbaPages, false, false, false, false))
 		}
 	}
 
@@ -198,21 +189,54 @@ func Pack() {
 	// }
 }
 
-func Close() {
-	program.Close()
+func (atl *Atlas) Buffers(bufferIndices ...int) struct {
+	Clear func()
+	Draw  func(camera geo.Transform)
+} {
+	return struct {
+		Clear func()
+		Draw  func(camera geo.Transform)
+	}{
+		Clear: func() {
+			for _, bufferIndex := range bufferIndices {
+				atl.buffers[bufferIndex].Clear(false, true)
+			}
+		},
+		Draw: func(camera geo.Transform) {
+			if len(bufferIndices) > 0 {
+				w, h := gfx.Window.GetSize()
+				program.SetUniform(program.UniformLocation("screenSize"), [2]float32{float32(w), float32(h)})
 
-	for _, shader := range shaders {
-		shader.Close()
+				program.SetUniform(program.UniformLocation("cameraTransform"), camera.Inverse())
+
+				textureUnits := make([]gfx.TextureUnit, len(atl.volumes))
+				for i, volume := range atl.volumes {
+					u := gfx.TextureUnit(i)
+					u.SetTextureArray(volume)
+					textureUnits[i] = u
+				}
+				program.SetUniform(program.UniformLocation("textureArray"), textureUnits)
+				for _, bufferIndex := range bufferIndices {
+					atl.buffers[bufferIndex].Draw(program)
+				}
+			}
+		},
 	}
-	shaders = shaders[:0]
+}
 
-	for _, volume := range volumes {
+func (atl *Atlas) Close() {
+	for _, volume := range atl.volumes {
 		volume.Close()
 	}
-	volumes = volumes[:0]
+	atl.volumes = atl.volumes[:0]
 
-	for i := range entries {
-		entries[i] = entry{}
+	for i := range atl.entries {
+		atl.entries[i] = entry{}
 	}
-	entries = entries[:0]
+	atl.entries = atl.entries[:0]
+	for i, buf := range atl.buffers {
+		buf.Close()
+		atl.buffers[i] = auto.Buffer{}
+	}
+	atl.buffers = atl.buffers[:0]
 }
